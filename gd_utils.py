@@ -25,7 +25,7 @@ def hinge_loss(y_pred, y_true):
 
 def bce_grad(y_pred, y_true, x):
     """Gradient for binary cross entropy loss, expects y_pred as logit."""
-    return np.dot((y_pred - y_true), x)
+    return np.dot((y_pred - y_true), x.transpose())
 
 
 def update_weights_vanilla(weights, grad, learning_rate):
