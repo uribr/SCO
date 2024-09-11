@@ -7,8 +7,16 @@ def softmax(x):
 
 
 def sigmoid(x):
-    """Compute sigmoid function."""
-    return 1 / (1 + np.exp(-x))
+    """Compute sigmoid function. Implementation taken from https://blog.dailydoseofds.com/p/a-highly-overlooked-point-in-the"""
+    return np.vectorize(scalar_sigmoid)(x)
+
+def scalar_sigmoid(x):
+    if x > 0:
+        z = np.exp(-x)
+        return 1 / (1 + z)
+    else:
+        z = np.exp(x)
+        return z / (1 + z)
 
 
 def bce_loss(y_pred, y_true, epsilon=1e-8):
