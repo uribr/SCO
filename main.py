@@ -1,65 +1,93 @@
+import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.datasets import fetch_openml
 import pandas as pd
 from gd_utils import *
 
-selected_classes = [0, 9]           # selecting 2 classes (digits) to make it binary
+
+# Default values
+VALIDATION_SET_RELATIVE_SIZE = 0.2
+TRAINING_SET_RELATIVE_SIZE = 0.6
+TEST_SET_RELATIVE_SIZE = 0.2
+# Selecting 2 classes (digits) to make it binary
+SELECTED_CLASSES = [0, 9]
+LEARNING_RATE = 0.01
+# +1 for the bias term
+WEIGHT_LENGTH = 785
+BATCH_SIZE = 64
 NUM_EPOCHS = 5
 
 
-# Load and preprocess data
-mnist = fetch_openml('mnist_784')
 
-df = pd.DataFrame.from_dict({'data': list(mnist['data'].astype('float64').values), 'target': mnist['target'].astype('int')})
+def main(learning_rate, batch_size, number_of_epochs, selected_classes, verbose):
+    if verbose:
+        print('Starting...')
+    # Load and preprocess data
+    mnist = fetch_openml('mnist_784')
 
-# filter by class, shuffle, divide to train/validation/test
-df = df.loc[df['target'].isin(selected_classes)]
-df['target'] = df['target'].replace(to_replace=selected_classes[0], value=0)
-df['target'] = df['target'].replace(to_replace=selected_classes[1], value=1)
+    df = pd.DataFrame.from_dict(
+        {'data': list(mnist['data'].astype('float64').values), 'target': mnist['target'].astype('int')})
 
-df = df.sample(frac=1).reset_index(drop=True)               # Need to add a constant seed for reproduction
-data_split = [0.6, 0.2, 0.2]        # train/validation/test
+    # filter by class, shuffle, divide to train/validation/test
+    df = df.loc[df['target'].isin(selected_classes)]
+    df['target'] = df['target'].replace(to_replace=selected_classes[0], value=0)
+    df['target'] = df['target'].replace(to_replace=selected_classes[1], value=1)
+    # TODO (Sol) - Need to add a constant seed for reproduction
+    df = df.sample(frac=1).reset_index(drop=True)
+    # train/validation/test
+    data_split = [TRAINING_SET_RELATIVE_SIZE,
+                  VALIDATION_SET_RELATIVE_SIZE,
+                  TEST_SET_RELATIVE_SIZE]
 
-num_samples = len(df)
-df_train = df.iloc[:int(num_samples * data_split[0]), :]
-df_validation = df.iloc[int(num_samples * data_split[0]): int(num_samples * (data_split[1] + data_split[0])), :]
-df_test = df.iloc[int(num_samples * (data_split[1] + data_split[0])):, :]
+    num_samples = len(df)
+    df_train = df.iloc[:int(num_samples * data_split[0]), :]
+    df_validation = df.iloc[int(num_samples * data_split[0]): int(num_samples * (data_split[1] + data_split[0])), :]
+    df_test = df.iloc[int(num_samples * (data_split[1] + data_split[0])):, :]
 
-train_data = np.stack(df_train['data'].to_numpy())
-validation_data = np.stack(df_validation['data'].to_numpy())
+    train_data = np.stack(df_train['data'].to_numpy())
+    validation_data = np.stack(df_validation['data'].to_numpy())
 
-# Adding a bias term
-train_data = np.concatenate((train_data, np.ones((len(train_data), 1), dtype='float64')), axis=1)
-validation_data = np.concatenate((validation_data, np.ones((len(validation_data), 1), dtype='float64')), axis=1)
+    # Adding a bias term
+    train_data = np.concatenate((train_data, np.ones((len(train_data), 1), dtype='float64')), axis=1)
+    validation_data = np.concatenate((validation_data, np.ones((len(validation_data), 1), dtype='float64')), axis=1)
 
-train_data = train_data.transpose() / 255.
-validation_data = validation_data.transpose() / 255.
+    train_data = train_data.transpose() / 255.
+    validation_data = validation_data.transpose() / 255.
 
-train_targets = df_train['target'].to_numpy()
-validation_targets = df_validation['target'].to_numpy()
+    train_targets = df_train['target'].to_numpy()
+    validation_targets = df_validation['target'].to_numpy()
 
+    # model
+    # initialize weights
+    weight_length = WEIGHT_LENGTH
+    weights = np.random.uniform(size=(1, weight_length))
+    weights[-1] = 1  # Bias term
 
-# model
-# initialize weights
-weight_length = 785  # +1 for the bias term
-weights = np.random.uniform(size=(1, weight_length))
-weights[-1] = 1  # Bias term
+    # For plotting
+    training_losses = []
+    validation_accuracies = []
 
-# Hyperparameters
-learning_rate = 0.01
+    # Training loop
+    previous_accuracy = 0
+    for epoch in range(number_of_epochs):
+        output = np.dot(weights, train_data)
+        logits = sigmoid(output)
+        epoch_loss = bce_loss(logits, train_targets)
+        grads = bce_grad(logits, train_targets, train_data)
 
-# For plotting
-training_losses = []
-validation_accuracies = []
+        weights = update_weights_vanilla(weights, grads, learning_rate)
+    if verbose:
+        print('Terminating...')
 
-# Training loop
-previous_accuracy = 0
-for epoch in range(NUM_EPOCHS):
-    output = np.dot(weights, train_data)
-    logits = sigmoid(output)
-    epoch_loss = bce_loss(logits, train_targets)
-    grads = bce_grad(logits, train_targets, train_data)
+if __name__ == '__main__':
+    # TODO (Uri) - Added some arguments. Will probably need to update this at some point.
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--labels', help='The labels for binary classification (e.g., "--labels 0 9" means [0, 9])', type=int, nargs=2, default=SELECTED_CLASSES)
+    parser.add_argument('--epochs', help='Number of epochs', type=int, default=NUM_EPOCHS)
+    parser.add_argument('--rate', help='Learning rate', type=float, default=LEARNING_RATE)
+    parser.add_argument('--batch', help='Batch size', type=int, default=BATCH_SIZE)
+    parser.add_argument('-v', '--verbose', help='Prints extra information and details', action='store_true')
+    args = parser.parse_args()
 
-    weights = update_weights_vanilla(weights, grads, learning_rate)
-
+    main(args.rate, args.batch, args.epochs ,args.labels, args.verbose)
