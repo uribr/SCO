@@ -27,7 +27,7 @@ def gradient_descent():
 
 
 
-def main(learning_rate, batch_size, number_of_epochs, selected_classes, regularization_coefficient, stochastic, projected, verbose):
+def main(learning_rate, batch_size, number_of_epochs, selected_classes, regularization_coefficient, stochastic, constrained_hypershpere_radius, verbose):
     if verbose:
         print('Starting...')
     # Load and preprocess data
@@ -87,9 +87,12 @@ def main(learning_rate, batch_size, number_of_epochs, selected_classes, regulari
         if regularization_coefficient is not None:
             # TODO (Uri) - Should the weights in the regularization term be the new weights from the vanilla update rule or the old weights?
             weights = new_weights + 2 * regularization_coefficient * np.linalg.norm(weights)
-        elif projected:
-            # TODO - Implement
-            raise NotImplementedError()
+        elif constrained_hypershpere_radius is not None:
+            # TODO (Uri) - Consider other types of constraints.
+            norm = np.linalg.norm(weights)
+            if norm > 0:
+                # We normalize the weights and then multiply it by the square root of the hypersphere's radius.
+                weights = (weights / norm) * np.sqrt(constrained_hypershpere_radius)
         elif stochastic:
             # TODO - Implement
             raise NotImplementedError()
@@ -103,14 +106,16 @@ if __name__ == '__main__':
     # TODO (Uri) - Added some arguments. Will probably need to update this at some point.
     parser = argparse.ArgumentParser()
     parser.add_argument('--labels', help='The labels for binary classification (e.g., "--labels 0 9" means [0, 9])', type=int, nargs=2, default=SELECTED_CLASSES)
-    parser.add_argument('-v', '--verbose', help='Prints extra information and details', action='store_true')
-    parser.add_argument('-r', '--regularized', help='Use regularized gradient descent', type=float, default=None)
+    parser.add_argument('-r', '--regularized', help='Use regularized gradient descent with the provided regularization coefficient', type=float, default=None)
+    parser.add_argument('-p', '--projected', help='Use projected gradient descent to within a spe', type=float, default=None)
     parser.add_argument('-s', '--stochastic', help='Use stochastic gradient descent', action='store_true')
-    parser.add_argument('-p', '--projected', help='Use projected gradient descent', action='store_true')
 
     parser.add_argument('--epochs', help='Number of epochs', type=int, default=NUM_EPOCHS)
     parser.add_argument('--rate', help='Learning rate', type=float, default=LEARNING_RATE)
     parser.add_argument('--batch', help='Batch size', type=int, default=BATCH_SIZE)
+
+    parser.add_argument('-v', '--verbose', help='Prints extra information and details', action='store_true')
+
     args = parser.parse_args()
 
     main(args.rate, args.batch, args.epochs ,args.labels,
