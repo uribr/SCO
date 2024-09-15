@@ -80,36 +80,27 @@ def main(learning_rate, batch_size, number_of_epochs, selected_classes, regulari
     epoch_loss = 0
     previous_accuracy = 0
     for epoch in range(number_of_epochs):
-        if not stochastic:
-            output = np.dot(weights, train_data.transpose())
-            logits = sigmoid(output)
-            epoch_loss = bce_loss(logits, train_targets) / len(train_data)
-            training_losses.append(epoch_loss)
-            grads = bce_grad(logits, train_targets, train_data)
-
-            new_weights = update_weights_vanilla(weights, grads, learning_rate)
-            if regularization_coefficient is not None:
-                # TODO (Uri) - Should the weights in the regularization term be the new weights from the vanilla update rule or the old weights?
-                weights = new_weights + 2 * regularization_coefficient * np.linalg.norm(weights)
-            elif projected:
-                # TODO - Implement
-                raise NotImplementedError()
-            else:
-                weights = new_weights
-
-        else:
-            epoch_loss = 0
+        if stochastic:
             for i in range(len(train_data)):
                 output = np.dot(weights, train_data[i])
                 logits = sigmoid(output)
                 epoch_loss += bce_loss(logits, train_targets[i])
                 grads = bce_grad(logits, train_targets[i], np.expand_dims(train_data[i], 0))
-
                 weights = update_weights_vanilla(weights, grads, learning_rate)
-            epoch_loss = epoch_loss / len(train_data)
-            training_losses.append(epoch_loss)
+        else:
+            epoch_loss, grads = epoch_setup(weights, train_data, train_targets)
+            new_weights = update_weights_vanilla(weights, grads, learning_rate)
+            if regularization_coefficient is not None:
+                # TODO (Uri) - Should the weights in the regularization term be the new weights from the vanilla update rule or the old weights?
+                new_weights += 2 * regularization_coefficient * np.linalg.norm(weights)
+            if hypersphere_radius is not None:
+                new_weights_norm = np.linalg.norm(new_weights)
+                assert new_weights_norm > 0
+                new_weights *= np.sqrt(hypersphere_radius) / new_weights_norm
+            weights = new_weights
 
-
+        epoch_loss = epoch_loss / len(train_data)
+        training_losses.append(epoch_loss)
 
     plt.plot(range(NUM_EPOCHS), training_losses)
     plt.show()
