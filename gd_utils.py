@@ -21,7 +21,7 @@ def scalar_sigmoid(x):
 
 def bce_loss(y_pred, y_true, epsilon=1e-8):
     """Compute the binary cross entropy loss averaged over the samples."""
-    l = np.dot(y_pred, np.log(y_true + epsilon))+ np.dot((1-y_pred), np.log(1 - y_true + epsilon))
+    l = -np.dot(y_pred, np.log(y_true + epsilon)) - np.dot((1 - y_pred), np.log(1 - y_true + epsilon))
     return np.mean(l, axis=0)
 
 
