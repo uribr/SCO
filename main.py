@@ -91,7 +91,6 @@ def main(learning_rate, batch_size, number_of_epochs, selected_classes, regulari
             epoch_loss, grads = epoch_setup(weights, train_data, train_targets)
             new_weights = update_weights_vanilla(weights, grads, learning_rate)
             if regularization_coefficient is not None:
-                # TODO (Uri) - Should the weights in the regularization term be the new weights from the vanilla update rule or the old weights?
                 new_weights += 2 * regularization_coefficient * np.linalg.norm(weights)
             if hypersphere_radius is not None:
                 new_weights_norm = np.linalg.norm(new_weights)
