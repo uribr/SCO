@@ -41,7 +41,8 @@ def main(learning_rate, batch_size, number_of_epochs, selected_classes, regulari
     df = df.loc[df['target'].isin(selected_classes)]
     df['target'] = df['target'].replace(to_replace=selected_classes[0], value=0)
     df['target'] = df['target'].replace(to_replace=selected_classes[1], value=1)
-    # TODO (Sol) - Need to add a constant seed for reproduction
+    np.random.seed(42)
+
     df = df.sample(frac=1).reset_index(drop=True)
     # train/validation/test
     data_split = [TRAINING_SET_RELATIVE_SIZE,
