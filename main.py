@@ -20,14 +20,15 @@ BATCH_SIZE = 64
 NUM_EPOCHS = 5
 
 
-def gradient_descent():
-    pass
+def epoch_setup(weights, train_data, train_targets):
+    output = np.dot(weights, train_data)
+    logits = sigmoid(output)
+    epoch_loss = bce_loss(logits, train_targets)
+    grads = bce_grad(logits, train_targets, train_data)
+    return epoch_loss, grads
 
 
-
-
-
-def main(learning_rate, batch_size, number_of_epochs, selected_classes, regularization_coefficient, stochastic, constrained_hypershpere_radius, verbose):
+def main(learning_rate, batch_size, number_of_epochs, selected_classes, regularization_coefficient, stochastic, hypersphere_radius, verbose):
     if verbose:
         print('Starting...')
     # Load and preprocess data
@@ -40,7 +41,8 @@ def main(learning_rate, batch_size, number_of_epochs, selected_classes, regulari
     df = df.loc[df['target'].isin(selected_classes)]
     df['target'] = df['target'].replace(to_replace=selected_classes[0], value=0)
     df['target'] = df['target'].replace(to_replace=selected_classes[1], value=1)
-    # TODO (Sol) - Need to add a constant seed for reproduction
+    np.random.seed(42)
+
     df = df.sample(frac=1).reset_index(drop=True)
     # train/validation/test
     data_split = [TRAINING_SET_RELATIVE_SIZE,
@@ -59,8 +61,8 @@ def main(learning_rate, batch_size, number_of_epochs, selected_classes, regulari
     train_data = np.concatenate((train_data, np.ones((len(train_data), 1), dtype='float64')), axis=1)
     validation_data = np.concatenate((validation_data, np.ones((len(validation_data), 1), dtype='float64')), axis=1)
 
-    train_data = train_data.transpose() / 255.
-    validation_data = validation_data.transpose() / 255.
+    train_data = train_data / 255.
+    validation_data = validation_data / 255.
 
     train_targets = df_train['target'].to_numpy()
     validation_targets = df_validation['target'].to_numpy()
@@ -76,28 +78,32 @@ def main(learning_rate, batch_size, number_of_epochs, selected_classes, regulari
     validation_accuracies = []
 
     # Training loop
+    epoch_loss = 0
     previous_accuracy = 0
     for epoch in range(number_of_epochs):
-        output = np.dot(weights, train_data)
-        logits = sigmoid(output)
-        epoch_loss = bce_loss(logits, train_targets)
-        grads = bce_grad(logits, train_targets, train_data)
-
-        new_weights = update_weights_vanilla(weights, grads, learning_rate)
-        if regularization_coefficient is not None:
-            # TODO (Uri) - Should the weights in the regularization term be the new weights from the vanilla update rule or the old weights?
-            weights = new_weights + 2 * regularization_coefficient * np.linalg.norm(weights)
-        elif constrained_hypershpere_radius is not None:
-            # TODO (Uri) - Consider other types of constraints.
-            norm = np.linalg.norm(weights)
-            if norm > 0:
-                # We normalize the weights and then multiply it by the square root of the hypersphere's radius.
-                weights = (weights / norm) * np.sqrt(constrained_hypershpere_radius)
-        elif stochastic:
-            # TODO - Implement
-            raise NotImplementedError()
+        if stochastic:
+            for i in range(len(train_data)):
+                output = np.dot(weights, train_data[i])
+                logits = sigmoid(output)
+                epoch_loss += bce_loss(logits, train_targets[i])
+                grads = bce_grad(logits, train_targets[i], np.expand_dims(train_data[i], 0))
+                weights = update_weights_vanilla(weights, grads, learning_rate)
         else:
+            epoch_loss, grads = epoch_setup(weights, train_data, train_targets)
+            new_weights = update_weights_vanilla(weights, grads, learning_rate)
+            if regularization_coefficient is not None:
+                new_weights += 2 * regularization_coefficient * np.linalg.norm(weights)
+            if hypersphere_radius is not None:
+                new_weights_norm = np.linalg.norm(new_weights)
+                assert new_weights_norm > 0
+                new_weights *= np.sqrt(hypersphere_radius) / new_weights_norm
             weights = new_weights
+
+        epoch_loss = epoch_loss / len(train_data)
+        training_losses.append(epoch_loss)
+
+    plt.plot(range(NUM_EPOCHS), training_losses)
+    plt.show()
 
     if verbose:
         print('Terminating...')
@@ -106,8 +112,8 @@ if __name__ == '__main__':
     # TODO (Uri) - Added some arguments. Will probably need to update this at some point.
     parser = argparse.ArgumentParser()
     parser.add_argument('--labels', help='The labels for binary classification (e.g., "--labels 0 9" means [0, 9])', type=int, nargs=2, default=SELECTED_CLASSES)
-    parser.add_argument('-r', '--regularized', help='Use regularized gradient descent with the provided regularization coefficient', type=float, default=None)
-    parser.add_argument('-p', '--projected', help='Use projected gradient descent to within a spe', type=float, default=None)
+    parser.add_argument('-r', '--regularized', help='Use regularized gradient descent', type=float, default=None)
+    parser.add_argument('-p', '--projected', help='Use projected gradient descent', type=float, default=None)
     parser.add_argument('-s', '--stochastic', help='Use stochastic gradient descent', action='store_true')
 
     parser.add_argument('--epochs', help='Number of epochs', type=int, default=NUM_EPOCHS)
