@@ -21,7 +21,7 @@ NUM_EPOCHS = 5
 
 
 def epoch_setup(weights, train_data, train_targets):
-    output = np.dot(weights, train_data)
+    output = np.dot(weights, train_data.transpose())
     logits = sigmoid(output)
     epoch_loss = bce_loss(logits, train_targets)
     grads = bce_grad(logits, train_targets, train_data)
@@ -75,7 +75,7 @@ def main(learning_rate, batch_size, number_of_epochs, selected_classes, regulari
 
     # For plotting
     training_losses = []
-    validation_accuracies = []
+    validation_losses = []
 
     # Training loop
     epoch_loss = 0
@@ -102,7 +102,13 @@ def main(learning_rate, batch_size, number_of_epochs, selected_classes, regulari
         epoch_loss = epoch_loss / len(train_data)
         training_losses.append(epoch_loss)
 
+        validation_epoch_loss = (bce_loss(sigmoid(np.dot(weights, validation_data.transpose())), validation_targets)
+                                 / len(validation_data))
+        validation_losses.append(validation_epoch_loss)
+
     plt.plot(range(NUM_EPOCHS), training_losses)
+    plt.plot(range(NUM_EPOCHS), validation_losses)
+    plt.legend(['Training Loss', 'Validation Loss'])
     plt.show()
 
     if verbose:
