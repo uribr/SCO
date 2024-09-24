@@ -11,24 +11,16 @@ VALIDATION_SET_RELATIVE_SIZE = 0.2
 TRAINING_SET_RELATIVE_SIZE = 0.6
 TEST_SET_RELATIVE_SIZE = 0.2
 REGULARIZATION_COEFFICIENT = 0.2
+# +1 for the bias term
+WEIGHT_LENGTH = 785
+
 # Selecting 2 classes (digits) to make it binary
 SELECTED_CLASSES = [0, 9]
 LEARNING_RATE = 0.01
-# +1 for the bias term
-WEIGHT_LENGTH = 785
-BATCH_SIZE = 64
 NUM_EPOCHS = 5
 
 
-def epoch_setup(weights, train_data, train_targets):
-    output = np.dot(weights, train_data.transpose())
-    logits = sigmoid(output)
-    epoch_loss = bce_loss(logits, train_targets)
-    grads = bce_grad(logits, train_targets, train_data)
-    return epoch_loss, grads
-
-
-def main(learning_rate, batch_size, number_of_epochs, selected_classes, regularization_coefficient, stochastic, hypersphere_radius, verbose):
+def main(learning_rate, number_of_epochs, selected_classes, regularization_coefficient, stochastic, hypersphere_radius, verbose):
     if verbose:
         print('Starting...')
     # Load and preprocess data
@@ -84,12 +76,16 @@ def main(learning_rate, batch_size, number_of_epochs, selected_classes, regulari
         if stochastic:
             for i in range(len(train_data)):
                 output = np.dot(weights, train_data[i])
-                logits = sigmoid(output)
-                epoch_loss += bce_loss(logits, train_targets[i])
-                grads = bce_grad(logits, train_targets[i], np.expand_dims(train_data[i], 0))
+                sample_logits = sigmoid(output)
+                epoch_loss += bce_loss(sample_logits, train_targets[i])
+                grads = bce_grad(sample_logits, train_targets[i], np.expand_dims(train_data[i], 0))
                 weights = update_weights_vanilla(weights, grads, learning_rate)
         else:
-            epoch_loss, grads = epoch_setup(weights, train_data, train_targets)
+            # epoch_loss, grads = epoch_setup(weights, train_data, train_targets)
+            output = np.dot(weights, train_data.transpose())
+            logits = sigmoid(output)
+            epoch_loss = bce_loss(logits, train_targets)
+            grads = bce_grad(logits, train_targets, train_data)
             new_weights = update_weights_vanilla(weights, grads, learning_rate)
             if regularization_coefficient is not None:
                 new_weights += 2 * regularization_coefficient * np.linalg.norm(weights)
@@ -102,9 +98,19 @@ def main(learning_rate, batch_size, number_of_epochs, selected_classes, regulari
         epoch_loss = epoch_loss / len(train_data)
         training_losses.append(epoch_loss)
 
-        validation_epoch_loss = (bce_loss(sigmoid(np.dot(weights, validation_data.transpose())), validation_targets)
+        validaion_logits = sigmoid(np.dot(weights, validation_data.transpose()))
+        validation_epoch_loss = (bce_loss(validaion_logits, validation_targets)
                                  / len(validation_data))
         validation_losses.append(validation_epoch_loss)
+
+    if stochastic:
+        logits = sigmoid(np.dot(weights, train_data.transpose()))
+
+    train_accuracy = binary_accuracy(logits, train_targets) * 100
+    validation_accuracy = binary_accuracy(validaion_logits, validation_targets) * 100
+
+    print(f'Train Accuracy: {train_accuracy:.2f} %, validation Accuracy: {validation_accuracy:.2f} %')
+
 
     plt.plot(range(NUM_EPOCHS), training_losses)
     plt.plot(range(NUM_EPOCHS), validation_losses)
@@ -113,6 +119,7 @@ def main(learning_rate, batch_size, number_of_epochs, selected_classes, regulari
 
     if verbose:
         print('Terminating...')
+
 
 if __name__ == '__main__':
     # TODO (Uri) - Added some arguments. Will probably need to update this at some point.
@@ -124,12 +131,11 @@ if __name__ == '__main__':
 
     parser.add_argument('--epochs', help='Number of epochs', type=int, default=NUM_EPOCHS)
     parser.add_argument('--rate', help='Learning rate', type=float, default=LEARNING_RATE)
-    parser.add_argument('--batch', help='Batch size', type=int, default=BATCH_SIZE)
 
     parser.add_argument('-v', '--verbose', help='Prints extra information and details', action='store_true')
 
     args = parser.parse_args()
 
-    main(args.rate, args.batch, args.epochs ,args.labels,
+    main(args.rate, args.epochs, args.labels,
          args.regularized, args.stochastic, args.projected,
          args.verbose)
