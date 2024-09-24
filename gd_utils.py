@@ -28,10 +28,9 @@ def bce_loss(y_pred, y_true, epsilon=1e-8):
 def hinge_loss(y_pred, y_true):
     """Compute the hinge loss averaged over the samples."""
 
-    dot_prod = np.multiply(y_true, np.squeeze(y_pred))
-    list = np.hstack([np.zeros_like(y_true), 1 - dot_prod])
-    l = np.max(list, axis=1)
-    return np.mean(l, axis=0)
+    elementwise_prod = np.multiply(y_true, np.squeeze(y_pred))
+    l = np.max(np.vstack([np.zeros_like(y_true), 1 - elementwise_prod]), axis=0)
+    return np.mean(l)
 
 
 def bce_grad(y_pred, y_true, x):
@@ -41,11 +40,12 @@ def bce_grad(y_pred, y_true, x):
 
 def hinge_grad(y_pred, y_true, x):
     """Gradient for the hinge loss, expects y_pred as logit, x as (samples x features)."""
-    if np.dot(y_true, y_pred) < 1:
-        return - np.dot(y_pred, x)
-    else:
-        return np.zeros(x.shape[1])
-
+    sample_margin = np.multiply(y_true, np.squeeze(y_pred))
+    sample_grads = y_pred.transpose() * x
+    indices = np.where(sample_margin < 1)
+    l = np.zeros_like(x)
+    l[indices, :] = sample_grads[indices, :]
+    return np.mean(l, axis=0)
 
 def update_weights_vanilla(weights, grad, learning_rate):
     return weights - learning_rate * grad
