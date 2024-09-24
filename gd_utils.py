@@ -41,7 +41,7 @@ def bce_grad(y_pred, y_true, x):
 def hinge_grad(y_pred, y_true, x):
     """Gradient for the hinge loss, expects y_pred as logit, x as (samples x features)."""
     sample_margin = np.multiply(y_true, np.squeeze(y_pred))
-    sample_grads = y_pred.transpose() * x
+    sample_grads = -y_pred.transpose() * x
     indices = np.where(sample_margin < 1)
     l = np.zeros_like(x)
     l[indices, :] = sample_grads[indices, :]
