@@ -27,7 +27,10 @@ def bce_loss(y_pred, y_true, epsilon=1e-8):
 
 def hinge_loss(y_pred, y_true):
     """Compute the hinge loss averaged over the samples."""
-    l = np.max(0, 1 - np.dot(y_true, y_pred))
+
+    dot_prod = np.multiply(y_true, np.squeeze(y_pred))
+    list = np.hstack([np.zeros_like(y_true), 1 - dot_prod])
+    l = np.max(list, axis=1)
     return np.mean(l, axis=0)
 
 

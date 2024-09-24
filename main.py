@@ -76,10 +76,10 @@ def main(learning_rate, number_of_epochs, selected_classes, regularization_coeff
 
     grad_function = None
     # Choose a loss function
-    if loss_function is HINGE_LOSS_STRING:
+    if loss_function == HINGE_LOSS_STRING:
         loss_function = hinge_loss
         grad_function = hinge_grad
-    elif loss_function is BCE_LOSS_STRING:
+    elif loss_function == BCE_LOSS_STRING:
         loss_function = bce_loss
         grad_function = bce_grad
     else:
@@ -148,7 +148,7 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--regularized', help='Use regularized gradient descent', type=float, default=None)
     parser.add_argument('-p', '--projected', help='Use projected gradient descent', type=float, default=None)
     parser.add_argument('-s', '--stochastic', help='Use stochastic gradient descent', action='store_true')
-    parser.add_argument('-l', '--loss', help='Choose the loss function to use.', type=str,required=true)
+    parser.add_argument('-l', '--loss', help='Choose the loss function to use.', type=str, required=True)
 
     parser.add_argument('--epochs', help='Number of epochs', type=int, default=NUM_EPOCHS)
     parser.add_argument('--rate', help='Learning rate', type=float, default=LEARNING_RATE)
