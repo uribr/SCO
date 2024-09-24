@@ -46,3 +46,9 @@ def hinge_grad(y_pred, y_true, x):
 
 def update_weights_vanilla(weights, grad, learning_rate):
     return weights - learning_rate * grad
+
+
+def binary_accuracy(y_pred, y_true, thr=0.5):
+    y_pred_b = np.where(np.squeeze(y_pred) > thr, 1, 0)
+    accuracy = np.sum(y_pred_b == y_true) / len(y_true)
+    return accuracy
