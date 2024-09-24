@@ -1,4 +1,6 @@
 import argparse
+from argparse import ArgumentError
+
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.datasets import fetch_openml
@@ -19,8 +21,11 @@ SELECTED_CLASSES = [0, 9]
 LEARNING_RATE = 0.01
 NUM_EPOCHS = 5
 
+BCE_LOSS_STRING = "bce"
+HINGE_LOSS_STRING = "hinge"
 
-def main(learning_rate, number_of_epochs, selected_classes, regularization_coefficient, stochastic, hypersphere_radius, verbose):
+
+def main(learning_rate, number_of_epochs, selected_classes, regularization_coefficient, stochastic, hypersphere_radius, loss_function, verbose):
     if verbose:
         print('Starting...')
     # Load and preprocess data
@@ -69,6 +74,17 @@ def main(learning_rate, number_of_epochs, selected_classes, regularization_coeff
     training_losses = []
     validation_losses = []
 
+    grad_function = None
+    # Choose a loss function
+    if loss_function is HINGE_LOSS_STRING:
+        loss_function = hinge_loss
+        grad_function = hinge_grad
+    elif loss_function is BCE_LOSS_STRING:
+        loss_function = bce_loss
+        grad_function = bce_grad
+    else:
+        raise ArgumentError("Loss function " + loss_function + " is not supported", loss_function)
+
     # Training loop
     epoch_loss = 0
     previous_accuracy = 0
@@ -86,10 +102,10 @@ def main(learning_rate, number_of_epochs, selected_classes, regularization_coeff
             # epoch_loss, grads = epoch_setup(weights, train_data, train_targets)
             output = np.dot(weights, train_data.transpose())
             logits = sigmoid(output)
-            epoch_loss = bce_loss(logits, train_targets)
+            epoch_loss = loss_function(logits, train_targets)
             validaion_logits = sigmoid(np.dot(weights, validation_data.transpose()))
 
-            grads = bce_grad(logits, train_targets, train_data)
+            grads = grad_function(logits, train_targets, train_data)
             new_weights = update_weights_vanilla(weights, grads, learning_rate)
             if regularization_coefficient is not None:
                 new_weights += 2 * regularization_coefficient * np.linalg.norm(weights)
@@ -132,6 +148,7 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--regularized', help='Use regularized gradient descent', type=float, default=None)
     parser.add_argument('-p', '--projected', help='Use projected gradient descent', type=float, default=None)
     parser.add_argument('-s', '--stochastic', help='Use stochastic gradient descent', action='store_true')
+    parser.add_argument('-l', '--loss', help='Choose the loss function to use.', type=str,required=true)
 
     parser.add_argument('--epochs', help='Number of epochs', type=int, default=NUM_EPOCHS)
     parser.add_argument('--rate', help='Learning rate', type=float, default=LEARNING_RATE)
@@ -142,4 +159,4 @@ if __name__ == '__main__':
 
     main(args.rate, args.epochs, args.labels,
          args.regularized, args.stochastic, args.projected,
-         args.verbose)
+         args.loss, args.verbose)
