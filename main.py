@@ -109,7 +109,8 @@ def main(learning_rate, number_of_epochs, selected_classes, regularization_coeff
     train_accuracy = binary_accuracy(logits, train_targets) * 100
     validation_accuracy = binary_accuracy(validaion_logits, validation_targets) * 100
 
-    print(f'Train Accuracy: {train_accuracy:.2f} %, validation Accuracy: {validation_accuracy:.2f} %')
+    print(f'Train Accuracy: {train_accuracy:.2f} %, validation Accuracy: {validation_accuracy:.2f} %\n')
+    print(f'Train Loss: {epoch_loss:.2f}, Validation Loss: {validation_epoch_loss:.2f}\n')
 
 
     plt.plot(range(NUM_EPOCHS), training_losses)
