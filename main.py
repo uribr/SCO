@@ -80,11 +80,15 @@ def main(learning_rate, number_of_epochs, selected_classes, regularization_coeff
                 epoch_loss += bce_loss(sample_logits, train_targets[i])
                 grads = bce_grad(sample_logits, train_targets[i], np.expand_dims(train_data[i], 0))
                 weights = update_weights_vanilla(weights, grads, learning_rate)
+            validaion_logits = sigmoid(np.dot(weights, validation_data.transpose()))
+
         else:
             # epoch_loss, grads = epoch_setup(weights, train_data, train_targets)
             output = np.dot(weights, train_data.transpose())
             logits = sigmoid(output)
             epoch_loss = bce_loss(logits, train_targets)
+            validaion_logits = sigmoid(np.dot(weights, validation_data.transpose()))
+
             grads = bce_grad(logits, train_targets, train_data)
             new_weights = update_weights_vanilla(weights, grads, learning_rate)
             if regularization_coefficient is not None:
@@ -98,7 +102,6 @@ def main(learning_rate, number_of_epochs, selected_classes, regularization_coeff
         epoch_loss = epoch_loss / len(train_data)
         training_losses.append(epoch_loss)
 
-        validaion_logits = sigmoid(np.dot(weights, validation_data.transpose()))
         validation_epoch_loss = (bce_loss(validaion_logits, validation_targets)
                                  / len(validation_data))
         validation_losses.append(validation_epoch_loss)
