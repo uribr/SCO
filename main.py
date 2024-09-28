@@ -17,7 +17,7 @@ REGULARIZATION_COEFFICIENT = 0.2
 WEIGHT_LENGTH = 785
 
 # Selecting 2 classes (digits) to make it binary
-SELECTED_CLASSES = [0, 9]
+SELECTED_CLASSES = [3, 6]
 LEARNING_RATE = 0.01
 NUM_EPOCHS = 5
 
@@ -36,9 +36,9 @@ def main(learning_rate, number_of_epochs, selected_classes, regularization_coeff
 
     # filter by class, shuffle, divide to train/validation/test
     df = df.loc[df['target'].isin(selected_classes)]
-    df['target'] = df['target'].replace(to_replace=selected_classes[0], value=0)
+    df['target'] = df['target'].replace(to_replace=selected_classes[0], value=-1)
     df['target'] = df['target'].replace(to_replace=selected_classes[1], value=1)
-    np.random.seed(133652)
+    np.random.seed(1337)
 
     df = df.sample(frac=1).reset_index(drop=True)
     # train/validation/test
@@ -66,8 +66,7 @@ def main(learning_rate, number_of_epochs, selected_classes, regularization_coeff
 
     # model
     # initialize weights
-    weights = np.random.uniform(low=0.01, high=1.0, size=(1, WEIGHT_LENGTH))
-    weights[-1] = 1  # Bias term
+    weights = np.random.uniform(low=0.1, high=1.0, size=(1, WEIGHT_LENGTH))
 
     # For plotting
     training_losses = []

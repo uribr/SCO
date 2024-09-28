@@ -33,15 +33,15 @@ def bce_loss(y_pred, y_true, epsilon=1e-8):
     l = -np.dot(y_pred, np.log(y_true + epsilon)) - np.dot((1 - y_pred), np.log(1 - y_true + epsilon))
     return np.mean(l, axis=0)
 
-def hinge_loss(y,x, w):
+def hinge_loss(y, x, w):
     """Compute the hinge loss averaged over the samples."""
     loss = 0
     grad = 0
     for (x_,y_) in zip(x,y):
-        v = y_*np.dot(w,x_)
+        v = y_ * np.dot(w,x_)
         loss += max(0,1-v)
         grad += 0 if v > 1 else -y_*x_
-    return loss.item(), grad
+    return loss.item() / len(y), grad / len(y)
 
 
 def bce_grad(y_pred, y_true, x):
@@ -58,7 +58,7 @@ def hinge_grad(y_pred, y_true, x):
     return np.mean(l, axis=0)
 
 def update_weights_vanilla(weights, grad, learning_rate):
-    return weights - learning_rate * grad
+    return weights - learning_rate * grad / np.linalg.norm(grad)
 
 def binary_accuracy(y, x, w, thr=0.5):
     preds = np.where(np.dot(x, np.squeeze(w)) > thr, 1, 0)
