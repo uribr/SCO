@@ -17,7 +17,7 @@ REGULARIZATION_COEFFICIENT = 0.2
 WEIGHT_LENGTH = 785
 
 # Selecting 2 classes (digits) to make it binary
-SELECTED_CLASSES = [3, 6]
+SELECTED_CLASSES = [1, 2]
 LEARNING_RATE = 0.01
 NUM_EPOCHS = 5
 
