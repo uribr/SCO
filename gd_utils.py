@@ -19,16 +19,19 @@ def scalar_sigmoid(x):
         return z / (1 + z)
 
 
-def bce_loss(y, x, w, epsilon=1e-8):
+# def bce_loss(y, x, w, epsilon=1e-8):
+#     """Compute the binary cross entropy loss averaged over the samples."""
+#     loss = 0
+#     grad = 0
+#     for truth, sample in zip(y, x):
+#         pred = np.dot(sample, w)
+#         loss += -np.dot(pred, np.log(truth + epsilon)) - np.dot(1 - pred, np.log(1 - truth + epsilon))
+#         grad += np.dot(pred - truth, sample)
+#     return loss.item(), grad
+def bce_loss(y_pred, y_true, epsilon=1e-8):
     """Compute the binary cross entropy loss averaged over the samples."""
-    loss = 0
-    grad = 0
-    for truth, sample in zip(y, x):
-        pred = np.dot(sample, w)
-        loss += -np.dot(pred, np.log(truth + epsilon)) - np.dot(1 - pred, np.log(1 - truth + epsilon))
-        grad += np.dot(pred - truth, sample)
-    return loss.item(), grad
-
+    l = -np.dot(y_pred, np.log(y_true + epsilon)) - np.dot((1 - y_pred), np.log(1 - y_true + epsilon))
+    return np.mean(l, axis=0)
 
 def hinge_loss(y,x, w):
     """Compute the hinge loss averaged over the samples."""
@@ -41,9 +44,9 @@ def hinge_loss(y,x, w):
     return loss.item(), grad
 
 
-def bce_grad(y, x, w):
+def bce_grad(y_pred, y_true, x):
     """Gradient for binary cross entropy loss, expects y_pred as logit."""
-    return np.dot((np.dot() - y), )
+    return np.dot((y_pred - y_true), x)
 
 def hinge_grad(y_pred, y_true, x):
     """Gradient for the hinge loss, expects y_pred as logit, x as (samples x features)."""
