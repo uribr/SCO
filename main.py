@@ -66,7 +66,7 @@ def main(learning_rate, number_of_epochs, selected_classes, regularization_coeff
 
     # model
     # initialize weights
-    weights = np.random.uniform(low=0.01, high=1.0, size=(1, WEIGHT_LENGTH)) # np.zeros((1, WEIGHT_LENGTH)) #
+    weights = np.random.uniform(low=0.01, high=1.0, size=(1, WEIGHT_LENGTH))
     weights[-1] = 1  # Bias term
 
     # For plotting
@@ -90,7 +90,7 @@ def main(learning_rate, number_of_epochs, selected_classes, regularization_coeff
             for i in range(len(train_data)):
                 output = np.dot(weights, train_data[i])
                 sample_logits = sigmoid(output)
-                epoch_loss += bce_loss(sample_logits, train_targets[i])
+                epoch_loss += loss_function(train_targets[i], train_data[i], weights)
                 grads = bce_grad(sample_logits, train_targets[i], np.expand_dims(train_data[i], 0))
                 weights = update_weights_vanilla(weights, grads, learning_rate)
             validaion_logits = sigmoid(np.dot(weights, validation_data.transpose()))
