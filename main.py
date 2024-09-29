@@ -31,13 +31,23 @@ def main(learning_rate, number_of_epochs, selected_classes, regularization_coeff
     # Load and preprocess data
     mnist = fetch_openml('mnist_784')
 
+    # Choose a loss function
+    if str.lower(loss_function) == HINGE_LOSS_STRING:
+        loss_function = hinge_loss
+        labels = [-1, 1]
+    elif str.lower(loss_function) == BCE_LOSS_STRING:
+        loss_function = bce_loss
+        labels = [0, 1]
+    else:
+        raise ArgumentError("Loss function " + loss_function + " is not supported", loss_function)
+
     df = pd.DataFrame.from_dict(
         {'data': list(mnist['data'].astype('float64').values), 'target': mnist['target'].astype('int')})
 
     # filter by class, shuffle, divide to train/validation/test
     df = df.loc[df['target'].isin(selected_classes)]
-    df['target'] = df['target'].replace(to_replace=selected_classes[0], value=-1)
-    df['target'] = df['target'].replace(to_replace=selected_classes[1], value=1)
+    df['target'] = df['target'].replace(to_replace=selected_classes[0], value=labels[0])
+    df['target'] = df['target'].replace(to_replace=selected_classes[1], value=labels[1])
     np.random.seed(1337)
 
     df = df.sample(frac=1).reset_index(drop=True)
@@ -73,13 +83,7 @@ def main(learning_rate, number_of_epochs, selected_classes, regularization_coeff
     validation_losses = []
 
     grad_function = None
-    # Choose a loss function
-    if str.lower(loss_function) == HINGE_LOSS_STRING:
-        loss_function = hinge_loss
-    elif str.lower(loss_function) == BCE_LOSS_STRING:
-        loss_function = bce_loss
-    else:
-        raise ArgumentError("Loss function " + loss_function + " is not supported", loss_function)
+
 
     # Training loop
     epoch_loss = 0
@@ -89,9 +93,10 @@ def main(learning_rate, number_of_epochs, selected_classes, regularization_coeff
             for i in range(len(train_data)):
                 output = np.dot(weights, train_data[i])
                 sample_logits = sigmoid(output)
-                epoch_loss += bce_loss(sample_logits, train_targets[i])
-                grads = bce_grad(sample_logits, train_targets[i], np.expand_dims(train_data[i], 0))
-                weights = update_weights_vanilla(weights, grads, learning_rate)
+                sample_loss, grad = bce_loss(sample_logits, train_targets[i])
+                epoch_loss += sample_loss
+                # grads = bce_grad(sample_logits, train_targets[i], np.expand_dims(train_data[i], 0))
+                weights = update_weights_vanilla(weights, grad, learning_rate)
             validaion_logits = sigmoid(np.dot(weights, validation_data.transpose()))
 
         else:
@@ -198,7 +203,7 @@ def main(learning_rate, number_of_epochs, selected_classes, regularization_coeff
 if __name__ == '__main__':
     # TODO (Uri) - Added some arguments. Will probably need to update this at some point.
     parser = argparse.ArgumentParser()
-    parser.add_argument('--labels', help='The labels for binary classification (e.g., "--labels 0 9" means [0, 9])', type=int, nargs=2, default=SELECTED_CLASSES)
+    parser.add_argument('--digits', help='The classes for binary classification (e.g., "--digits 0 9" means [0, 9])', type=int, nargs=2, default=SELECTED_CLASSES)
     parser.add_argument('-r', '--regularized', help='Use regularized gradient descent', type=float, default=None)
     parser.add_argument('-p', '--projected', help='Use projected gradient descent', type=float, default=None)
     parser.add_argument('-s', '--stochastic', help='Use stochastic gradient descent', action='store_true')
@@ -211,7 +216,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    main(args.rate, args.epochs, args.labels,
+    main(args.rate, args.epochs, args.digits,
          args.regularized, args.stochastic, args.projected,
          args.loss, args.verbose)
 
