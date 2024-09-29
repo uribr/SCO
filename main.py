@@ -25,17 +25,42 @@ BCE_LOSS_STRING = "bce"
 HINGE_LOSS_STRING = "hinge"
 
 
-def main(learning_rate, number_of_epochs, selected_classes, regularization_coefficient, stochastic, hypersphere_radius, loss_function, verbose):
+def build_plot_text(learning_rate, selected_classes, number_of_epochs,
+                    loss_function_name, regularization_coefficient,
+                    hypersphere_radius, stochastic):
+    plot_text = f'Digits: {selected_classes[0]}, {selected_classes[-1]}\n'\
+                f'Rate: {learning_rate}\n'\
+                f'Iterations: {number_of_epochs}\n'\
+                f'Loss: {loss_function_name}\n'\
+                'Variant: '
+    if regularization_coefficient is not None:
+        plot_text += 'RGD\n'
+        plot_text += f'Coefficient: {regularization_coefficient}\n'
+    elif hypersphere_radius is not None:
+        plot_text += 'PGD\n'
+        plot_text += f'Radius: {hypersphere_radius}\n'
+    elif stochastic:
+        plot_text += 'SGD\n'
+    else:
+        plot_text += 'GD\n'
+
+    return plot_text
+
+
+def main(learning_rate, number_of_epochs, selected_classes,
+         regularization_coefficient, stochastic, hypersphere_radius,
+         loss_function_name, verbose):
     if verbose:
         print('Starting...')
     # Load and preprocess data
     mnist = fetch_openml('mnist_784')
 
     # Choose a loss function
-    if str.lower(loss_function) == HINGE_LOSS_STRING:
+    loss_function = None
+    if str.lower(loss_function_name) == HINGE_LOSS_STRING:
         loss_function = hinge_loss
         labels = [-1, 1]
-    elif str.lower(loss_function) == BCE_LOSS_STRING:
+    elif str.lower(loss_function_name) == BCE_LOSS_STRING:
         loss_function = bce_loss
         labels = [0, 1]
     else:
@@ -102,7 +127,7 @@ def main(learning_rate, number_of_epochs, selected_classes, regularization_coeff
 
             new_weights = update_weights_vanilla(weights, grads, learning_rate)
             if regularization_coefficient is not None:
-                new_weights += 2 * regularization_coefficient * np.linalg.norm(weights)
+                new_weights += 2 * regularization_coefficient * np.linalg.norm(new_weights)
             if hypersphere_radius is not None:
                 new_weights_norm = np.linalg.norm(new_weights)
                 assert new_weights_norm > 0
@@ -123,9 +148,25 @@ def main(learning_rate, number_of_epochs, selected_classes, regularization_coeff
     print(f'Train Accuracy: {train_accuracy:.2f} %, validation Accuracy: {validation_accuracy:.2f} %\n')
     print(f'Train Loss: {training_losses[-1]:.2f}, Validation Loss: {validation_losses[-1]:.2f}\n')
 
+    # Format title
+    plot_title = "Plot"
+
+    # Format extra information
+    plot_text = build_plot_text(learning_rate, selected_classes, number_of_epochs,
+                                loss_function_name, regularization_coefficient,
+                                hypersphere_radius, stochastic)
+
+
+
+
+
+
     plt.plot(range(number_of_epochs), training_losses)
     plt.plot(range(number_of_epochs), validation_losses)
     plt.legend(['Training Loss', 'Validation Loss'])
+    plt.title(plot_title)
+    plt.text(0.02, 0.5, plot_text, transform=plt.gcf().transFigure)
+    plt.subplots_adjust(left=0.3)
     plt.show()
 
     if verbose:

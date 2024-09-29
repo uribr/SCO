@@ -30,8 +30,8 @@ def bce_loss(y_true, x, w, epsilon=1e-8):
 
 def hinge_loss(y, x, w):
     """Compute the hinge loss averaged over the samples."""
-    loss = 0
-    grad = 0
+    loss = np.zeros(1)
+    grad = np.zeros_like(w)
     for (x_,y_) in zip(x,y):
         v = y_ * np.dot(w,x_)
         loss += max(0,1-v)
