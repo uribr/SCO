@@ -51,6 +51,7 @@ def main(learning_rate, number_of_epochs, selected_classes, regularization_coeff
     np.random.seed(1337)
 
     df = df.sample(frac=1).reset_index(drop=True)
+
     # train/validation/test
     data_split = [TRAINING_SET_RELATIVE_SIZE,
                   VALIDATION_SET_RELATIVE_SIZE,
@@ -81,9 +82,6 @@ def main(learning_rate, number_of_epochs, selected_classes, regularization_coeff
     # For plotting
     training_losses = []
     validation_losses = []
-
-    grad_function = None
-
 
     # Training loop
     epoch_loss = 0
@@ -134,7 +132,6 @@ def main(learning_rate, number_of_epochs, selected_classes, regularization_coeff
         print('Terminating...')
 
 if __name__ == '__main__':
-    # TODO (Uri) - Added some arguments. Will probably need to update this at some point.
     parser = argparse.ArgumentParser()
     parser.add_argument('--digits', help='The classes for binary classification (e.g., "--digits 0 9" means [0, 9])', type=int, nargs=2, default=SELECTED_CLASSES)
     parser.add_argument('-r', '--regularized', help='Use regularized gradient descent', type=float, default=None)
@@ -152,6 +149,3 @@ if __name__ == '__main__':
     main(args.rate, args.epochs, args.digits,
          args.regularized, args.stochastic, args.projected,
          args.loss, args.verbose)
-
-    # np.set_printoptions(precision=3)
-    # test1()
