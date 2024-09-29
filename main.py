@@ -24,9 +24,11 @@ def main(learning_rate, number_of_epochs, selected_classes,
     if str.lower(loss_function_name) == HINGE_LOSS_STRING:
         loss_function = hinge_loss
         labels = [-1, 1]
+        pred_thr = 0
     elif str.lower(loss_function_name) == BCE_LOSS_STRING:
         loss_function = bce_loss
         labels = [0, 1]
+        pred_thr = 0.5
     else:
         raise ArgumentError(f"Loss function {loss_function_name} is not supported")
 
@@ -113,8 +115,17 @@ def main(learning_rate, number_of_epochs, selected_classes,
     # if stochastic:
         # logits = sigmoid(np.dot(weights, train_data.transpose()))
 
-    train_accuracy = binary_accuracy(train_targets, train_data, weights) * 100 # binary_accuracy(np.dot(train_data, weights), train_targets) * 100
-    validation_accuracy = binary_accuracy(validation_targets, validation_data, weights)  * 100 # binary_accuracy(np.dot(validation_data, weights), validation_targets) * 100
+    train_y_pred = np.dot(train_data, weights.transpose())
+    validation_y_pred = np.dot(validation_data, weights.transpose())
+
+    if loss_function_name == BCE_LOSS_STRING:
+        train_y_pred = sigmoid(train_y_pred)
+        validation_y_pred = sigmoid(validation_y_pred)
+
+    train_accuracy = binary_accuracy(train_y_pred, train_targets, pred_thr, labels) * 100
+    validation_accuracy = binary_accuracy(validation_y_pred, validation_targets, pred_thr, labels) * 100
+    # train_accuracy = binary_accuracy(train_targets, train_data, weights) * 100
+    # validation_accuracy = binary_accuracy(validation_targets, validation_data, weights)  * 100
 
     print(f'Train Accuracy: {train_accuracy:.2f} %, validation Accuracy: {validation_accuracy:.2f} %\n')
     print(f'Train Loss: {training_losses[-1]:.2f}, Validation Loss: {validation_losses[-1]:.2f}\n')
