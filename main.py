@@ -1,3 +1,4 @@
+import time
 import argparse
 from argparse import ArgumentError
 
@@ -40,6 +41,8 @@ def main(learning_rate, number_of_epochs, selected_classes,
     df['target'] = df['target'].replace(to_replace=selected_classes[0], value=labels[0])
     df['target'] = df['target'].replace(to_replace=selected_classes[1], value=labels[1])
     np.random.seed(1337)
+    # np.random.seed(int(time.time()*1000))
+
 
     df = df.sample(frac=1).reset_index(drop=True)
 
@@ -68,7 +71,8 @@ def main(learning_rate, number_of_epochs, selected_classes,
 
     # model
     # initialize weights
-    weights = np.random.uniform(low=0.1, high=1.0, size=(1, WEIGHT_LENGTH))
+    weights = np.random.randn(WEIGHT_LENGTH) * np.sqrt(1 / WEIGHT_LENGTH)
+    weights[-1] = 0
 
     # For plotting
     training_losses = []
@@ -127,8 +131,8 @@ def main(learning_rate, number_of_epochs, selected_classes,
     # train_accuracy = binary_accuracy(train_targets, train_data, weights) * 100
     # validation_accuracy = binary_accuracy(validation_targets, validation_data, weights)  * 100
 
-    print(f'Train Accuracy: {train_accuracy:.2f} %, validation Accuracy: {validation_accuracy:.2f} %\n')
-    print(f'Train Loss: {training_losses[-1]:.2f}, Validation Loss: {validation_losses[-1]:.2f}\n')
+    print(f'Train Accuracy: {train_accuracy:.3f} %, validation Accuracy: {validation_accuracy:.3f} %\n')
+    print(f'Train Loss: {training_losses[-1]:.3f}, Validation Loss: {validation_losses[-1]:.3f}\n')
 
     # Format title
     plot_title = "Loss vs. Iterations"
@@ -136,8 +140,8 @@ def main(learning_rate, number_of_epochs, selected_classes,
     # Format extra information
     plot_text = build_plot_text(learning_rate, selected_classes, number_of_epochs,
                                 loss_function_name, regularization_coefficient,
-                                hypersphere_radius, stochastic, train_accuracy,
-                                validation_accuracy)
+                                hypersphere_radius, stochastic, training_losses[-1],
+                                validation_losses[-1], train_accuracy, validation_accuracy)
 
     # TODO - Add the test set to the plots or redistribute the data into just train and test (replacing validation with test)
     plt.plot(range(number_of_epochs), training_losses)
