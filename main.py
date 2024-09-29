@@ -120,7 +120,7 @@ def main(learning_rate, number_of_epochs, selected_classes,
     print(f'Train Loss: {training_losses[-1]:.2f}, Validation Loss: {validation_losses[-1]:.2f}\n')
 
     # Format title
-    plot_title = "Plot"
+    plot_title = "Loss vs. Iterations"
 
     # Format extra information
     plot_text = build_plot_text(learning_rate, selected_classes, number_of_epochs,
@@ -131,6 +131,8 @@ def main(learning_rate, number_of_epochs, selected_classes,
     # TODO - Add the test set to the plots or redistribute the data into just train and test (replacing validation with test)
     plt.plot(range(number_of_epochs), training_losses)
     plt.plot(range(number_of_epochs), validation_losses)
+    plt.xlabel("Iterations")
+    plt.ylabel("Loss")
     plt.legend(['Training Loss', 'Validation Loss'])
     plt.title(plot_title)
     plt.text(0.02, 0.5, plot_text, transform=plt.gcf().transFigure)
