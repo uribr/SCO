@@ -25,7 +25,7 @@ def bce_loss(y_true, x, w, epsilon=1e-8):
     y_pred_logits = sigmoid(y_pred)
     l = -np.dot(y_pred_logits, np.log(y_true + epsilon)) - np.dot((1 - y_pred_logits), np.log(1 - y_true + epsilon))
     g = np.dot(y_pred_logits - y_true, x)
-    return np.mean(l, axis=0), g
+    return l / len(y_true), g
 
 
 def hinge_loss(y, x, w):
