@@ -91,25 +91,17 @@ def main(learning_rate, number_of_epochs, selected_classes, regularization_coeff
     for epoch in range(number_of_epochs):
         if stochastic:
             for i in range(len(train_data)):
-                output = np.dot(weights, train_data[i])
-                sample_logits = sigmoid(output)
-                sample_loss, grad = bce_loss(sample_logits, train_targets[i])
+
+                sample_loss, grad = loss_function(
+                    np.expand_dims(train_targets[i], 0), np.expand_dims(train_data[i], 0), weights)
                 epoch_loss += sample_loss
-                # grads = bce_grad(sample_logits, train_targets[i], np.expand_dims(train_data[i], 0))
                 weights = update_weights_vanilla(weights, grad, learning_rate)
-            validaion_logits = sigmoid(np.dot(weights, validation_data.transpose()))
+            validaion_loss, _ = loss_function(validation_targets, validation_data, weights)
 
         else:
-            # epoch_loss, grads = epoch_setup(weights, train_data, train_targets)
-            # output = np.dot(weights, train_data.transpose())
-            # logits = sigmoid(output)
-            # epoch_loss = loss_function(logits, train_targets)
+
             epoch_loss, grads = loss_function(train_targets, train_data, weights)
-            # validaion_logits = sigmoid(np.dot(weights, validation_data.transpose()))
-            validaion_logits = np.dot(weights, validation_data.transpose())
 
-
-            # grads = grad_function(output, train_targets, train_data)
             new_weights = update_weights_vanilla(weights, grads, learning_rate)
             if regularization_coefficient is not None:
                 new_weights += 2 * regularization_coefficient * np.linalg.norm(weights)
@@ -121,18 +113,17 @@ def main(learning_rate, number_of_epochs, selected_classes, regularization_coeff
 
         training_losses.append(epoch_loss)
 
-        validation_epoch_loss, _= loss_function(validation_targets, validation_data, weights)
+        validation_epoch_loss, _ = loss_function(validation_targets, validation_data, weights)
         validation_losses.append(validation_epoch_loss)
 
-    if stochastic:
-        logits = sigmoid(np.dot(weights, train_data.transpose()))
+    # if stochastic:
+        # logits = sigmoid(np.dot(weights, train_data.transpose()))
 
     train_accuracy = binary_accuracy(train_targets, train_data, weights) * 100 # binary_accuracy(np.dot(train_data, weights), train_targets) * 100
     validation_accuracy = binary_accuracy(validation_targets, validation_data, weights)  * 100 # binary_accuracy(np.dot(validation_data, weights), validation_targets) * 100
 
     print(f'Train Accuracy: {train_accuracy:.2f} %, validation Accuracy: {validation_accuracy:.2f} %\n')
     print(f'Train Loss: {training_losses[-1]:.2f}, Validation Loss: {validation_losses[-1]:.2f}\n')
-
 
     plt.plot(range(number_of_epochs), training_losses)
     plt.plot(range(number_of_epochs), validation_losses)
