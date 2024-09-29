@@ -41,7 +41,6 @@ def main(learning_rate, number_of_epochs, selected_classes,
     df['target'] = df['target'].replace(to_replace=selected_classes[0], value=labels[0])
     df['target'] = df['target'].replace(to_replace=selected_classes[1], value=labels[1])
     np.random.seed(1337)
-    # np.random.seed(int(time.time()*1000))
 
 
     df = df.sample(frac=1).reset_index(drop=True)
