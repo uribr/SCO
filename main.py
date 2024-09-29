@@ -2,49 +2,13 @@ import argparse
 from argparse import ArgumentError
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.datasets import fetch_openml
-import pandas as pd
+
 from gd_utils import *
-
-
-# Default values
-VALIDATION_SET_RELATIVE_SIZE = 0.2
-TRAINING_SET_RELATIVE_SIZE = 0.6
-TEST_SET_RELATIVE_SIZE = 0.2
-REGULARIZATION_COEFFICIENT = 0.2
-# +1 for the bias term
-WEIGHT_LENGTH = 785
-
-# Selecting 2 classes (digits) to make it binary
-SELECTED_CLASSES = [0, 9]
-LEARNING_RATE = 0.01
-NUM_EPOCHS = 5
-
-BCE_LOSS_STRING = "bce"
-HINGE_LOSS_STRING = "hinge"
-
-
-def build_plot_text(learning_rate, selected_classes, number_of_epochs,
-                    loss_function_name, regularization_coefficient,
-                    hypersphere_radius, stochastic):
-    plot_text = f'Digits: {selected_classes[0]}, {selected_classes[-1]}\n'\
-                f'Rate: {learning_rate}\n'\
-                f'Iterations: {number_of_epochs}\n'\
-                f'Loss: {loss_function_name}\n'\
-                'Variant: '
-    if regularization_coefficient is not None:
-        plot_text += 'RGD\n'
-        plot_text += f'Coefficient: {regularization_coefficient}\n'
-    elif hypersphere_radius is not None:
-        plot_text += 'PGD\n'
-        plot_text += f'Radius: {hypersphere_radius}\n'
-    elif stochastic:
-        plot_text += 'SGD\n'
-    else:
-        plot_text += 'GD\n'
-
-    return plot_text
+from plot_utils import *
+from configuration import *
 
 
 def main(learning_rate, number_of_epochs, selected_classes,
@@ -64,7 +28,7 @@ def main(learning_rate, number_of_epochs, selected_classes,
         loss_function = bce_loss
         labels = [0, 1]
     else:
-        raise ArgumentError("Loss function " + loss_function + " is not supported", loss_function)
+        raise ArgumentError(f"Loss function {loss_function_name} is not supported")
 
     df = pd.DataFrame.from_dict(
         {'data': list(mnist['data'].astype('float64').values), 'target': mnist['target'].astype('int')})
@@ -111,6 +75,8 @@ def main(learning_rate, number_of_epochs, selected_classes,
     # Training loop
     epoch_loss = 0
     previous_accuracy = 0
+    use_projection = hypersphere_radius is not None
+    use_regularization = regularization_coefficient is not None
     for epoch in range(number_of_epochs):
         if stochastic:
             for i in range(len(train_data)):
@@ -126,13 +92,18 @@ def main(learning_rate, number_of_epochs, selected_classes,
             epoch_loss, grads = loss_function(train_targets, train_data, weights)
 
             new_weights = update_weights_vanilla(weights, grads, learning_rate)
-            if regularization_coefficient is not None:
-                new_weights += 2 * regularization_coefficient * np.linalg.norm(new_weights)
-            if hypersphere_radius is not None:
+
+            if use_regularization:
+                new_weights += 2 * regularization_coefficient * np.linalg.norm(weights)
+            if use_projection:
                 new_weights_norm = np.linalg.norm(new_weights)
                 assert new_weights_norm > 0
-                new_weights *= np.sqrt(hypersphere_radius) / new_weights_norm
+                new_weights *= hypersphere_radius / new_weights_norm
             weights = new_weights
+
+            if verbose:
+                if (use_regularization or use_projection) and epoch % REPORT_FREQUENCY == 0:
+                    print(f'Weights Norm: {np.linalg.norm(weights)}')
 
         training_losses.append(epoch_loss)
 
@@ -154,13 +125,10 @@ def main(learning_rate, number_of_epochs, selected_classes,
     # Format extra information
     plot_text = build_plot_text(learning_rate, selected_classes, number_of_epochs,
                                 loss_function_name, regularization_coefficient,
-                                hypersphere_radius, stochastic)
+                                hypersphere_radius, stochastic, train_accuracy,
+                                validation_accuracy)
 
-
-
-
-
-
+    # TODO - Add the test set to the plots or redistribute the data into just train and test (replacing validation with test)
     plt.plot(range(number_of_epochs), training_losses)
     plt.plot(range(number_of_epochs), validation_losses)
     plt.legend(['Training Loss', 'Validation Loss'])
@@ -168,6 +136,10 @@ def main(learning_rate, number_of_epochs, selected_classes,
     plt.text(0.02, 0.5, plot_text, transform=plt.gcf().transFigure)
     plt.subplots_adjust(left=0.3)
     plt.show()
+
+    # TODO - Add a plot of accuracy.
+
+    # TODO - Figure out how to create comparison plots of the different variants
 
     if verbose:
         print('Terminating...')
