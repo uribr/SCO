@@ -64,8 +64,3 @@ def binary_accuracy(y, x, w, thr=0):
     preds = np.where(np.dot(x, np.squeeze(w)) > thr, 1, -1)
     accuracy = np.sum(preds == y) / len(y)
     return accuracy
-
-def _binary_accuracy(y_pred, y_true, thr=0.5):
-    y_pred_b = np.where(np.squeeze(y_pred) > thr, 1, 0)
-    accuracy = np.sum(y_pred_b == y_true) / len(y_true)
-    return accuracy
