@@ -90,6 +90,7 @@ def main(learning_rate, number_of_epochs, selected_classes,
                     np.expand_dims(train_targets[i], 0), np.expand_dims(train_data[i], 0), weights)
                 epoch_loss += sample_loss
                 weights = update_weights_vanilla(weights, grad, learning_rate)
+            epoch_loss = epoch_loss / len(train_data)
             validaion_loss, _ = loss_function(validation_targets, validation_data, weights)
 
         else:

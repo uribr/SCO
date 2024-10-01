@@ -50,7 +50,10 @@ def hinge_grad(y_pred, y_true, x):
 
 
 def update_weights_vanilla(weights, grad, learning_rate):
-    return weights - learning_rate * grad / np.linalg.norm(grad)
+    if np.linalg.norm(grad) == 0:
+        return weights
+    else:
+        return weights - learning_rate * grad / np.linalg.norm(grad)
 
 
 def binary_accuracy(y_pred, y_true, thr, labels):
