@@ -102,9 +102,8 @@ def main(learning_rate, number_of_epochs, selected_classes,
             if use_regularization:
                 new_weights += 2 * regularization_coefficient * np.linalg.norm(weights)
             if use_projection:
-                new_weights_norm = np.linalg.norm(new_weights)
-                assert new_weights_norm > 0
-                new_weights *= hypersphere_radius / new_weights_norm
+                new_weights = np.clip(new_weights, -hypersphere_radius, hypersphere_radius)
+
             weights = new_weights
 
             if verbose:
