@@ -7,14 +7,17 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.datasets import fetch_openml
 
+import plot_utils
 from gd_utils import *
 from plot_utils import *
+from main_utils import *
 from configuration import *
 
-
-def main(learning_rate, number_of_epochs, selected_classes,
+def do_stuff(learning_rate, number_of_epochs, selected_classes,
          regularization_coefficient, stochastic, hypersphere_radius,
          loss_function_name, verbose):
+
+    # TODO - Move the code of main to an auxiliary function and instead iterate over the configurations and run them
     if verbose:
         print('Starting...')
     # Load and preprocess data
@@ -160,21 +163,102 @@ def main(learning_rate, number_of_epochs, selected_classes,
     if verbose:
         print('Terminating...')
 
+
+def main():
+    """
+    If you pass an argument only once with multiple variants it will be used in all applicable variants.
+    By applicable we mean that the variant uses that parameter.
+
+    For instance, it is not an error to not have a regularization coefficient if Regularized Gradient
+    Descent was not specified and any other variant will ignore a regularization coefficient if one
+    is supplied.
+
+    Passing an argument multiple times without passing multiple variants is an error.
+
+    The general rule of thumb is that if you have multiple variants then for any other argument
+    except --verbose and --compare, the number of instances is at most one (if applicable to at least one of the
+    variants) or equal to the number of variants\runs.
+
+    Available variants include:
+
+        GD - Gradient Descent - A vanilla Gradient Descent where we normalize the gradient.
+
+        RGD - Regularized Gradient Descent - Adds a regularization term with a coefficient
+              between 0 and 1 (inclusive).
+
+        PGD - Projected Gradient Descent - Projects the weights to a hypersphere (ball) of
+              radius R.
+
+        CGD - Constrained Gradient Descent - Constraints each weight to be at most B
+              (Projection to ball of radius R using the infinity-norm)
+
+        SGD - Stochastic Gradient Descent - Gradient Descent where we perform the updates
+              one sample at time instead of batches.
+
+    Examples of valid input:
+
+    "python main.py -v GD --epochs 50 --rate 0.3 --loss hinge --digits 0 9"
+
+        This runs Gradient Descent with 50 epochs, a learning rate of 0.3 and with the hinge loss
+        function learning to classify between 0 and 9.
+
+    "python main.py -v GD --epochs 50 --rate 0.3 --loss hinge
+                    -v GD --epochs 200 --rate 0.7 --digits 0 9
+                    --compare"
+
+        This will run two instances of Gradient Descent one with 50 epochs and a learning rate of 0.3 and
+        one with 200 epochs and a learning rate of 0.7. Both instances will use the hinge loss function.
+        and digits as only one of each specified. Lastly, the --compare option was specified so we will
+        output a comparison graph between the two runs
+
+    "python main.py -v GD --epochs 50 --rate 0.3 --loss hinge --digits 0 9
+                   -v RGD --coefficient 0.5"
+
+        This will run both a Gradient Descent and a Regularized Gradient Descent with the same parameters.
+        Since the regularization coefficient is only applicable to Regularized Gradient Descent it can be
+        specified only once.
+
+    "python main.py -v SGD --epochs 50 --rate 0.3 --loss hinge --digits 8 0
+                    -v PGD --epochs 100 --rate 0.1 --loss bce --radius 2 --digits 1 2
+                    -v RGD --epochs 200 --rate 0.05 --loss hinge --coefficient 7.5 -- digits 7 3"
+
+        This will run a Stochastic Gradient Descent, a Projected Gradient Descent and a Regularized Gradient
+        Descent each with its own parameters. Notice that even though we already specified the hinge loss
+        function for the Gradient Descent we still had to specify it for the Regularized Gradient Descent.
+        That is, for any argument, once we pass more than once instance of it we have to pass an instance
+        for every variant.
+
+    Example of invalid input:"""
+    args = parse_arguments()
+    run_configurations = build_instances(args)
+
+
+    for config in run_configurations:
+        config.results = do_stuff(config)
+
+        # TODO - Move the drawing of graphs to here. Maybe.
+        plot_utils.draw_graph()
+
+    # TODO - Compare the results when --compare is specified.
+    plot_utils.draw_graph()
+
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--digits', help='The classes for binary classification (e.g., "--digits 0 9" means [0, 9])', type=int, nargs=2, default=SELECTED_CLASSES)
-    parser.add_argument('-r', '--regularized', help='Use regularized gradient descent', type=float, default=None)
-    parser.add_argument('-p', '--projected', help='Use projected gradient descent', type=float, default=None)
-    parser.add_argument('-s', '--stochastic', help='Use stochastic gradient descent', action='store_true')
-    parser.add_argument('-l', '--loss', help='Choose the loss function to use.', type=str, required=True)
+    main()
 
-    parser.add_argument('--epochs', help='Number of epochs', type=int, default=NUM_EPOCHS)
-    parser.add_argument('--rate', help='Learning rate', type=float, default=LEARNING_RATE)
-
-    parser.add_argument('-v', '--verbose', help='Prints extra information and details', action='store_true')
-
-    args = parser.parse_args()
-
-    main(args.rate, args.epochs, args.digits,
-         args.regularized, args.stochastic, args.projected,
-         args.loss, args.verbose)
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('--digits', help='The classes for binary classification (e.g., "--digits 0 9" means [0, 9])', type=int, nargs=2, default=SELECTED_CLASSES)
+    # parser.add_argument('-r', '--regularized', help='Use regularized gradient descent', type=float, default=None)
+    # parser.add_argument('-p', '--projected', help='Use projected gradient descent', type=float, default=None)
+    # parser.add_argument('-s', '--stochastic', help='Use stochastic gradient descent', action='store_true')
+    # parser.add_argument('-l', '--loss', help='Choose the loss function to use.', type=str, required=True)
+    #
+    # parser.add_argument('--epochs', help='Number of epochs', type=int, default=NUM_EPOCHS)
+    # parser.add_argument('--rate', help='Learning rate', type=float, default=LEARNING_RATE)
+    #
+    # parser.add_argument('-v', '--verbose', help='Prints extra information and details', action='store_true')
+    #
+    # args = parser.parse_args()
+    #
+    # main(args.rate, args.epochs, args.digits,
+    #      args.regularized, args.stochastic, args.projected,
+    #      args.loss, args.verbose)
