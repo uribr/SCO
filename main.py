@@ -7,34 +7,86 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.datasets import fetch_openml
 
+import gd
+import gd_utils
 import plot_utils
-from gd_utils import *
-from plot_utils import *
-from main_utils import *
-from configuration import *
+import main_utils
+import hardcoded_config
 
-def do_stuff(learning_rate, number_of_epochs, selected_classes,
-         regularization_coefficient, stochastic, hypersphere_radius,
-         loss_function_name, verbose):
+
+class GDResults:
+    def __init__(self):
+        self.training_losses = []
+        self.testing_losses = []
+
+        self.training_accuracies = []
+        self.testing_accuracies = []
+        pass
+
+
+
+def run(config):
+    if config.verbose:
+        print('Starting...')
+
+    if config.verbose:
+        print('Loading the MNIST dataset...')
+
+    if config.verbose:
+        print('Preprocessing...')
+
+    for single_run_data in config:
+        single_run_data.results = gradient_descent(single_run_data, config.verbose)
+        # TODO - Move the plotting to here or call the plotting function.
+
+    if config.compare:
+        # TODO - Compare
+        pass
+
+    if config.verbose:
+        print('Terminating...')
+
+def gradient_descent(parameters, verbose):
+    # We'll just use the same variables for now.
+    learning_rate = parameters.learning_rate
+    number_of_epochs = parameters.epochs
+    selected_classes = parameters.digits
+    loss_function_name = parameters.loss_function
+    stochastic = type(parameters) is gd.StochasticGradientDescent
+    regularization_coefficient = None
+    if hasattr(parameters, 'regularization_coefficient'):
+        regularization_coefficient = parameters.regularization_coefficient
+    hypersphere_radius = None
+    if hasattr(parameters, 'radius'):
+        hypersphere_radius = parameters.radius
+    cutoff = None
+    if hasattr(parameters, 'cutoff'):
+        cutoff = parameters.cutoff
+
+    gd_results = GDResults()
 
     # TODO - Move the code of main to an auxiliary function and instead iterate over the configurations and run them
     if verbose:
-        print('Starting...')
+        print(f'Starting... {type(parameters)} with parameters: {parameters}')
+
+    # TODO - Move the loading and preprocessing outside of this function and do it once for all the runs unless there is
+    #        some specialized preprocessing we would like to try on a specific variant.
+
     # Load and preprocess data
     mnist = fetch_openml('mnist_784')
 
     # Choose a loss function
     loss_function = None
-    if str.lower(loss_function_name) == HINGE_LOSS_STRING:
-        loss_function = hinge_loss
+    if str.lower(loss_function_name) == hardcoded_config.HINGE_LOSS_STRING:
+        loss_function = gd_utils.hinge_loss
         labels = [-1, 1]
         pred_thr = 0
-    elif str.lower(loss_function_name) == BCE_LOSS_STRING:
-        loss_function = bce_loss
+    elif str.lower(loss_function_name) == hardcoded_config.BCE_LOSS_STRING:
+        loss_function = gd_utils.bce_loss
         labels = [0, 1]
         pred_thr = 0.5
     else:
-        raise ArgumentError(f"Loss function {loss_function_name} is not supported")
+        raise RuntimeError(f"Loss function {loss_function_name} is not supported")
 
     df = pd.DataFrame.from_dict(
         {'data': list(mnist['data'].astype('float64').values), 'target': mnist['target'].astype('int')})
@@ -49,9 +101,9 @@ def do_stuff(learning_rate, number_of_epochs, selected_classes,
     df = df.sample(frac=1).reset_index(drop=True)
 
     # train/validation/test
-    data_split = [TRAINING_SET_RELATIVE_SIZE,
-                  VALIDATION_SET_RELATIVE_SIZE,
-                  TEST_SET_RELATIVE_SIZE]
+    data_split = [hardcoded_config.TRAINING_SET_RELATIVE_SIZE,
+                  hardcoded_config.VALIDATION_SET_RELATIVE_SIZE,
+                  hardcoded_config.TEST_SET_RELATIVE_SIZE]
 
     num_samples = len(df)
     df_train = df.iloc[:int(num_samples * data_split[0]), :]
@@ -71,20 +123,24 @@ def do_stuff(learning_rate, number_of_epochs, selected_classes,
     train_targets = df_train['target'].to_numpy()
     validation_targets = df_validation['target'].to_numpy()
 
+    # TODO - Most of what comes before this point is preprocessing and should be moved out of this function. The real GD starts here.
+
     # model
     # initialize weights
-    weights = np.random.randn(WEIGHT_LENGTH) * np.sqrt(1 / WEIGHT_LENGTH)
+    weights = np.random.randn(hardcoded_config.WEIGHT_LENGTH) * np.sqrt(1 / hardcoded_config.WEIGHT_LENGTH)
     weights[-1] = 0
 
     # For plotting
     training_losses = []
     validation_losses = []
+    training_accuracies = []
+    validation_accuracies = []
 
     # Training loop
     epoch_loss = 0
-    previous_accuracy = 0
     use_projection = hypersphere_radius is not None
     use_regularization = regularization_coefficient is not None
+    use_clipping = cutoff is not None
     for epoch in range(number_of_epochs):
         if stochastic:
             for i in range(len(train_data)):
@@ -92,7 +148,7 @@ def do_stuff(learning_rate, number_of_epochs, selected_classes,
                 sample_loss, grad = loss_function(
                     np.expand_dims(train_targets[i], 0), np.expand_dims(train_data[i], 0), weights)
                 epoch_loss += sample_loss
-                weights = update_weights_vanilla(weights, grad, learning_rate)
+                weights = gd_utils.update_weights_vanilla(weights, grad, learning_rate)
             epoch_loss = epoch_loss / len(train_data)
             validaion_loss, _ = loss_function(validation_targets, validation_data, weights)
 
@@ -100,50 +156,72 @@ def do_stuff(learning_rate, number_of_epochs, selected_classes,
 
             epoch_loss, grads = loss_function(train_targets, train_data, weights)
 
-            new_weights = update_weights_vanilla(weights, grads, learning_rate)
+            new_weights = gd_utils.update_weights_vanilla(weights, grads, learning_rate)
 
             if use_regularization:
                 new_weights += 2 * regularization_coefficient * np.linalg.norm(weights)
             if use_projection:
                 new_weights = np.clip(new_weights, -hypersphere_radius, hypersphere_radius)
+            if use_clipping:
+                new_weights = np.clip(new_weights, -cutoff, cutoff)
 
             weights = new_weights
 
             if verbose:
-                if (use_regularization or use_projection) and epoch % REPORT_FREQUENCY == 0:
+                if (use_regularization or use_projection) and epoch % hardcoded_config.REPORT_FREQUENCY == 0:
                     print(f'Weights Norm: {np.linalg.norm(weights)}')
 
+        # Compute and store losses
         training_losses.append(epoch_loss)
 
         validation_epoch_loss, _ = loss_function(validation_targets, validation_data, weights)
         validation_losses.append(validation_epoch_loss)
 
-    # if stochastic:
-        # logits = sigmoid(np.dot(weights, train_data.transpose()))
+        # Compute and store accuracies
+        train_y_pred = np.dot(train_data, weights.transpose())
+        validation_y_pred = np.dot(validation_data, weights.transpose())
 
-    train_y_pred = np.dot(train_data, weights.transpose())
-    validation_y_pred = np.dot(validation_data, weights.transpose())
+        if loss_function_name == hardcoded_config.BCE_LOSS_STRING:
+            train_y_pred = gd_utils.sigmoid(train_y_pred)
+            validation_y_pred = gd_utils.sigmoid(validation_y_pred)
 
-    if loss_function_name == BCE_LOSS_STRING:
-        train_y_pred = sigmoid(train_y_pred)
-        validation_y_pred = sigmoid(validation_y_pred)
+        training_accuracy = gd_utils.binary_accuracy(train_y_pred, train_targets, pred_thr, labels) * 100
+        training_accuracies.append(training_accuracy)
 
-    train_accuracy = binary_accuracy(train_y_pred, train_targets, pred_thr, labels) * 100
-    validation_accuracy = binary_accuracy(validation_y_pred, validation_targets, pred_thr, labels) * 100
-    # train_accuracy = binary_accuracy(train_targets, train_data, weights) * 100
-    # validation_accuracy = binary_accuracy(validation_targets, validation_data, weights)  * 100
+        validation_accuracy = gd_utils.binary_accuracy(validation_y_pred, validation_targets, pred_thr, labels) * 100
+        validation_accuracies.append(validation_accuracy)
 
-    print(f'Train Accuracy: {train_accuracy:.3f} %, validation Accuracy: {validation_accuracy:.3f} %\n')
+    # train_y_pred = np.dot(train_data, weights.transpose())
+    # validation_y_pred = np.dot(validation_data, weights.transpose())
+
+    # if loss_function_name == BCE_LOSS_STRING:
+    #     train_y_pred = sigmoid(train_y_pred)
+    #     validation_y_pred = sigmoid(validation_y_pred)
+    #
+    # train_accuracy = binary_accuracy(train_y_pred, train_targets, pred_thr, labels) * 100
+    # validation_accuracy = binary_accuracy(validation_y_pred, validation_targets, pred_thr, labels) * 100
+
+
+    print(f'Train Accuracy: {training_accuracies[-1]:.3f} %, validation Accuracy: {validation_accuracies[-1]:.3f} %\n')
     print(f'Train Loss: {training_losses[-1]:.3f}, Validation Loss: {validation_losses[-1]:.3f}\n')
 
+    gd_results.training_losses = training_losses
+    gd_results.testing_losses = validation_losses
+    gd_results.training_accuracies = training_accuracies
+    gd_results.testing_accuracies = validation_accuracies
+
+    # TODO - This is where GD truly ends. Everything after this point should move out.
+
+    # TODO - Move all the plotting outside of this function.
     # Format title
     plot_title = "Loss vs. Iterations"
 
     # Format extra information
-    plot_text = build_plot_text(learning_rate, selected_classes, number_of_epochs,
-                                loss_function_name, regularization_coefficient,
-                                hypersphere_radius, stochastic, training_losses[-1],
-                                validation_losses[-1], train_accuracy, validation_accuracy)
+    plot_text = plot_utils.build_plot_text(learning_rate, selected_classes, number_of_epochs,
+                                           loss_function_name, regularization_coefficient,
+                                           hypersphere_radius, stochastic, training_losses[-1],
+                                           validation_losses[-1], training_accuracies[-1],
+                                           validation_accuracies[-1])
 
     # TODO - Add the test set to the plots or redistribute the data into just train and test (replacing validation with test)
     plt.plot(range(number_of_epochs), training_losses)
@@ -160,8 +238,6 @@ def do_stuff(learning_rate, number_of_epochs, selected_classes,
 
     # TODO - Figure out how to create comparison plots of the different variants
 
-    if verbose:
-        print('Terminating...')
 
 
 def main():
@@ -229,18 +305,11 @@ def main():
         for every variant.
 
     Example of invalid input:"""
-    args = parse_arguments()
-    run_configurations = build_instances(args)
+    parser = main_utils.GDArgumentParser()
+    args = parser.parse_arguments()
+    run_configurations = parser.build_instances(args)
 
-
-    for config in run_configurations:
-        config.results = do_stuff(config)
-
-        # TODO - Move the drawing of graphs to here. Maybe.
-        plot_utils.draw_graph()
-
-    # TODO - Compare the results when --compare is specified.
-    plot_utils.draw_graph()
+    run(run_configurations)
 
 if __name__ == '__main__':
     main()
