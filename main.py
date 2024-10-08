@@ -156,10 +156,11 @@ def gradient_descent(parameters, verbose):
 
             epoch_loss, grads = loss_function(train_targets, train_data, weights)
 
+            if use_regularization:
+                grads += 2 * regularization_coefficient * weights
+
             new_weights = gd_utils.update_weights_vanilla(weights, grads, learning_rate)
 
-            if use_regularization:
-                new_weights += 2 * regularization_coefficient * np.linalg.norm(weights)
             if use_projection:
                 new_weights = np.clip(new_weights, -hypersphere_radius, hypersphere_radius)
             if use_clipping:
