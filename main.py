@@ -25,25 +25,49 @@ class GDResults:
 
 
 
-def run(config):
-    if config.verbose:
+def run(configs):
+    if configs.verbose:
         print('Starting...')
 
-    if config.verbose:
+    if configs.verbose:
         print('Loading the MNIST dataset...')
 
-    if config.verbose:
+    if configs.verbose:
         print('Preprocessing...')
 
-    for single_run_data in config:
-        single_run_data.results = gradient_descent(single_run_data, config.verbose)
+    for config in configs:
+        config.results = gradient_descent(config, configs.verbose)
         # TODO - Move the plotting to here or call the plotting function.
 
-    if config.compare:
-        # TODO - Compare
-        pass
 
-    if config.verbose:
+    # TODO - Add text to the comparison plots to indicate learning rates, digits and special parameters of each curve.
+    if configs.compare:
+        for config in configs:
+            plt.plot(range(config.epochs), config.results.testing_losses)
+        plt.xlabel("Iterations")
+        plt.ylabel("Loss")
+        plt.legend([f'{gd.GD_VARIANT_MAPPING[type(config)]}' for config in configs])
+        plt.title("Test Comparison")
+        plt.text(0.02, 0.5, "", transform=plt.gcf().transFigure)
+        plt.subplots_adjust(left=0.3)
+        plt.show()
+
+        if configs.verbose:
+            # Verbosity adds a comparison of the training graphs.
+            for config in configs:
+                plt.plot(config.epochs, config.results.training_losses)
+            plt.xlabel("Iterations")
+            plt.ylabel("Loss")
+            plt.legend([f'{gd.GD_VARIANT_MAPPING[type(config)]}' for config in configs])
+            plt.title("Training Comparison")
+            plt.text(0.02, 0.5, "", transform=plt.gcf().transFigure)
+            plt.subplots_adjust(left=0.3)
+            plt.show()
+    # TODO - Save the plots to files with a formatted name such as "[DATE]_[TIME]_[TYPE]" where TYPE can be one of:
+    #  1. GD variant
+    #  2. Training\Test Comparison
+
+    if configs.verbose:
         print('Terminating...')
 
 def gradient_descent(parameters, verbose):
@@ -237,7 +261,7 @@ def gradient_descent(parameters, verbose):
 
     # TODO - Add a plot of accuracy.
 
-    # TODO - Figure out how to create comparison plots of the different variants
+    return gd_results
 
 
 

@@ -2,24 +2,25 @@ from enum import Enum
 
 from gd_utils import *
 
+
 # To be honest... If I had a system where the number of variants might increase, which isn't really farfetched for
 # learning in my opinion, I would've used a dictionary instead of classes to represent each variant because it would
 # be a lot easier to add new ones.
 # I'd use enum of strings or something like that for easy to use keys and each run would be a dictionary.
 
 class GradientDescentVariant(Enum):
-    GD = "GD"   # Gradient Descent
-    RGD = "RGD" # Regularized Gradient Descent
-    PGD = "PGD" # Projected Gradient Descent
-    CGD = "CGD" # Constrained Gradient Descent
-    SGD = "SGD" # Stochastic Gradient Descent
+    GD = "GD"  # Gradient Descent
+    RGD = "RGD"  # Regularized Gradient Descent
+    PGD = "PGD"  # Projected Gradient Descent
+    CGD = "CGD"  # Constrained Gradient Descent
+    SGD = "SGD"  # Stochastic Gradient Descent
+
 
 class RunConfiguration(list):
     def __init__(self, verbose, compare, seq=()):
         self.verbose = verbose
         self.compare = compare
         super(RunConfiguration, self).__init__(seq)
-
 
 
 class GradientDescent:
@@ -51,3 +52,10 @@ class ConstrainedGradientDescent(GradientDescent):
 class StochasticGradientDescent(GradientDescent):
     def __init__(self, digits, learning_rate, epochs, loss_function):
         super(StochasticGradientDescent, self).__init__(digits, learning_rate, epochs, loss_function)
+
+
+GD_VARIANT_MAPPING = {GradientDescent: GradientDescentVariant.GD.name,
+                      RegularizedGradientDescent: GradientDescentVariant.RGD.name,
+                      ProjectedGradientDescent: GradientDescentVariant.PGD.name,
+                      ConstrainedGradientDescent: GradientDescentVariant.CGD.name,
+                      StochasticGradientDescent: GradientDescentVariant.SGD.name}
