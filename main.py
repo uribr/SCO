@@ -126,26 +126,24 @@ def gradient_descent(parameters, verbose):
 
     # train/validation/test
     data_split = [hardcoded_config.TRAINING_SET_RELATIVE_SIZE,
-                  hardcoded_config.VALIDATION_SET_RELATIVE_SIZE,
                   hardcoded_config.TEST_SET_RELATIVE_SIZE]
 
     num_samples = len(df)
     df_train = df.iloc[:int(num_samples * data_split[0]), :]
-    df_validation = df.iloc[int(num_samples * data_split[0]): int(num_samples * (data_split[1] + data_split[0])), :]
-    df_test = df.iloc[int(num_samples * (data_split[1] + data_split[0])):, :]
+    df_test = df.iloc[int(num_samples * data_split[0]): int(num_samples * (data_split[1] + data_split[0])), :]
 
     train_data = np.stack(df_train['data'].to_numpy())
-    validation_data = np.stack(df_validation['data'].to_numpy())
+    test_data = np.stack(df_test['data'].to_numpy())
 
     # Adding a bias term
     train_data = np.concatenate((train_data, np.ones((len(train_data), 1), dtype='float64')), axis=1)
-    validation_data = np.concatenate((validation_data, np.ones((len(validation_data), 1), dtype='float64')), axis=1)
+    test_data = np.concatenate((test_data, np.ones((len(test_data), 1), dtype='float64')), axis=1)
 
     train_data = train_data / 255.
-    validation_data = validation_data / 255.
+    test_data = test_data / 255.
 
     train_targets = df_train['target'].to_numpy()
-    validation_targets = df_validation['target'].to_numpy()
+    test_targets = df_test['target'].to_numpy()
 
     # TODO - Most of what comes before this point is preprocessing and should be moved out of this function. The real GD starts here.
 
@@ -156,9 +154,9 @@ def gradient_descent(parameters, verbose):
 
     # For plotting
     training_losses = []
-    validation_losses = []
+    test_losses = []
     training_accuracies = []
-    validation_accuracies = []
+    test_accuracies = []
 
     # Training loop
     epoch_loss = 0
@@ -174,7 +172,7 @@ def gradient_descent(parameters, verbose):
                 epoch_loss += sample_loss
                 weights = gd_utils.update_weights_vanilla(weights, grad, learning_rate)
             epoch_loss = epoch_loss / len(train_data)
-            validaion_loss, _ = loss_function(validation_targets, validation_data, weights)
+            test_loss, _ = loss_function(test_targets, test_data, weights)
 
         else:
 
@@ -199,41 +197,41 @@ def gradient_descent(parameters, verbose):
         # Compute and store losses
         training_losses.append(epoch_loss)
 
-        validation_epoch_loss, _ = loss_function(validation_targets, validation_data, weights)
-        validation_losses.append(validation_epoch_loss)
+        test_epoch_loss, _ = loss_function(test_targets, test_data, weights)
+        test_losses.append(test_epoch_loss)
 
         # Compute and store accuracies
         train_y_pred = np.dot(train_data, weights.transpose())
-        validation_y_pred = np.dot(validation_data, weights.transpose())
+        test_y_pred = np.dot(test_data, weights.transpose())
 
         if loss_function_name == hardcoded_config.BCE_LOSS_STRING:
             train_y_pred = gd_utils.sigmoid(train_y_pred)
-            validation_y_pred = gd_utils.sigmoid(validation_y_pred)
+            test_y_pred = gd_utils.sigmoid(test_y_pred)
 
         training_accuracy = gd_utils.binary_accuracy(train_y_pred, train_targets, pred_thr, labels) * 100
         training_accuracies.append(training_accuracy)
 
-        validation_accuracy = gd_utils.binary_accuracy(validation_y_pred, validation_targets, pred_thr, labels) * 100
-        validation_accuracies.append(validation_accuracy)
+        test_accuracy = gd_utils.binary_accuracy(test_y_pred, test_targets, pred_thr, labels) * 100
+        test_accuracies.append(test_accuracy)
 
     # train_y_pred = np.dot(train_data, weights.transpose())
-    # validation_y_pred = np.dot(validation_data, weights.transpose())
+    # test_y_pred = np.dot(test_data, weights.transpose())
 
     # if loss_function_name == BCE_LOSS_STRING:
     #     train_y_pred = sigmoid(train_y_pred)
-    #     validation_y_pred = sigmoid(validation_y_pred)
+    #     test_y_pred = sigmoid(test_y_pred)
     #
     # train_accuracy = binary_accuracy(train_y_pred, train_targets, pred_thr, labels) * 100
-    # validation_accuracy = binary_accuracy(validation_y_pred, validation_targets, pred_thr, labels) * 100
+    # test_accuracy = binary_accuracy(test_y_pred, test_targets, pred_thr, labels) * 100
 
 
-    print(f'Train Accuracy: {training_accuracies[-1]:.3f} %, validation Accuracy: {validation_accuracies[-1]:.3f} %\n')
-    print(f'Train Loss: {training_losses[-1]:.3f}, Validation Loss: {validation_losses[-1]:.3f}\n')
+    print(f'Train Accuracy: {training_accuracies[-1]:.3f} %, validation Accuracy: {test_accuracies[-1]:.3f} %\n')
+    print(f'Train Loss: {training_losses[-1]:.3f}, Validation Loss: {test_losses[-1]:.3f}\n')
 
     gd_results.training_losses = training_losses
-    gd_results.testing_losses = validation_losses
+    gd_results.testing_losses = test_losses
     gd_results.training_accuracies = training_accuracies
-    gd_results.testing_accuracies = validation_accuracies
+    gd_results.testing_accuracies = test_accuracies
 
     # TODO - This is where GD truly ends. Everything after this point should move out.
 
@@ -245,15 +243,15 @@ def gradient_descent(parameters, verbose):
     plot_text = plot_utils.build_plot_text(learning_rate, selected_classes, number_of_epochs,
                                            loss_function_name, regularization_coefficient,
                                            hypersphere_radius, stochastic, training_losses[-1],
-                                           validation_losses[-1], training_accuracies[-1],
-                                           validation_accuracies[-1])
+                                           test_losses[-1], training_accuracies[-1],
+                                           test_accuracies[-1])
 
     # TODO - Add the test set to the plots or redistribute the data into just train and test (replacing validation with test)
     plt.plot(range(number_of_epochs), training_losses)
-    plt.plot(range(number_of_epochs), validation_losses)
+    plt.plot(range(number_of_epochs), test_losses)
     plt.xlabel("Iterations")
     plt.ylabel("Loss")
-    plt.legend(['Training Loss', 'Validation Loss'])
+    plt.legend(['Train Loss', 'Test Loss'])
     plt.title(plot_title)
     plt.text(0.02, 0.5, plot_text, transform=plt.gcf().transFigure)
     plt.subplots_adjust(left=0.3)
@@ -338,21 +336,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument('--digits', help='The classes for binary classification (e.g., "--digits 0 9" means [0, 9])', type=int, nargs=2, default=SELECTED_CLASSES)
-    # parser.add_argument('-r', '--regularized', help='Use regularized gradient descent', type=float, default=None)
-    # parser.add_argument('-p', '--projected', help='Use projected gradient descent', type=float, default=None)
-    # parser.add_argument('-s', '--stochastic', help='Use stochastic gradient descent', action='store_true')
-    # parser.add_argument('-l', '--loss', help='Choose the loss function to use.', type=str, required=True)
-    #
-    # parser.add_argument('--epochs', help='Number of epochs', type=int, default=NUM_EPOCHS)
-    # parser.add_argument('--rate', help='Learning rate', type=float, default=LEARNING_RATE)
-    #
-    # parser.add_argument('-v', '--verbose', help='Prints extra information and details', action='store_true')
-    #
-    # args = parser.parse_args()
-    #
-    # main(args.rate, args.epochs, args.digits,
-    #      args.regularized, args.stochastic, args.projected,
-    #      args.loss, args.verbose)
