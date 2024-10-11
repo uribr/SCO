@@ -73,7 +73,7 @@ def plot_comparison(configs):
 def _build_common_legend_text(params, config, verbose):
     variant_text = f'{gd.GD_VARIANT_MAPPING[type(config)]}'
     if params.digits is None:
-        variant_text += f'|[{config.digits[0]}, {config.digits[1]}]'
+        variant_text += f'[{config.digits[0]}, {config.digits[1]}]'
     if params.epochs is None and verbose:
         variant_text += f'|E: {config.epochs}'
     if params.rate is None:
