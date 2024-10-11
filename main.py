@@ -24,40 +24,22 @@ def run(configs):
         print('Starting...')
 
     if configs.verbose:
-        print('Loading the MNIST dataset...')
-
-    if configs.verbose:
-        print('Preprocessing...')
+        print('Fetching data...')
+    mnist = fetch_openml('mnist_784')
 
     np.random.seed(configs.seed)
 
     for config in configs:
-        config.results = gradient_descent(config, configs.verbose)
+        config.results = gradient_descent(config, mnist, configs.verbose)
         plot_utils.plot_data_from_config(config, configs.verbose)
 
-    # TODO - Add text to the comparison plots to indicate learning rates, digits and special parameters of each curve.
     if configs.compare:
         plot_utils.plot_comparison(configs)
-        plot_utils.plot_data([(config.epochs, config.results.testing_losses) for config in configs],
-                             [f'{gd.GD_VARIANT_MAPPING[type(config)]}' for config in configs],
-                             'Iteration', 'Loss','Test Loss Comparison', '')
-        plot_utils.plot_data([(config.epochs, config.results.testing_accuracies) for config in configs],
-                             [f'{gd.GD_VARIANT_MAPPING[type(config)]}' for config in configs],
-                             'Iteration', 'Accuracy','Test Accuracy Comparison', '')
-
-        if configs.verbose:
-            # Verbosity adds a comparison of the training graphs.
-            plot_utils.plot_data([(config.epochs, config.results.training_losses) for config in configs],
-                                 [f'{gd.GD_VARIANT_MAPPING[type(config)]}' for config in configs],
-                                 'Iteration', 'Loss', 'Test Loss Comparison', '')
-            plot_utils.plot_data([(config.epochs, config.results.training_accuracies) for config in configs],
-                                 [f'{gd.GD_VARIANT_MAPPING[type(config)]}' for config in configs],
-                                 'Iteration', 'Accuracy', 'Test Accuracy Comparison', '')
 
     if configs.verbose:
         print('Terminating...')
 
-def gradient_descent(parameters, verbose):
+def gradient_descent(parameters, mnist_dataset, verbose):
     # We'll just use the same variables for now.
     learning_rate = parameters.learning_rate
     number_of_epochs = parameters.epochs
@@ -71,16 +53,10 @@ def gradient_descent(parameters, verbose):
     if hasattr(parameters, 'radius'):
         hypersphere_radius = parameters.radius
     cutoff = None
-    if hasattr(parameters, 'cutoff'):
-        cutoff = parameters.cutoff
+    if hasattr(parameters, 'cutoff_value'):
+        cutoff = parameters.cutoff_value
 
     gd_results = GDResults()
-
-    # TODO - Move the loading and preprocessing outside of this function and do it once for all the runs unless there is
-    #        some specialized preprocessing we would like to try on a specific variant.
-
-    # Load and preprocess data
-    mnist = fetch_openml('mnist_784')
 
     # Choose a loss function
     loss_function = None
@@ -95,8 +71,10 @@ def gradient_descent(parameters, verbose):
     else:
         raise RuntimeError(f"Loss function {loss_function_name} is not supported")
 
+    if verbose:
+        print('Preprocessing...')
     df = pd.DataFrame.from_dict(
-        {'data': list(mnist['data'].astype('float64').values), 'target': mnist['target'].astype('int')})
+        {'data': list(mnist_dataset['data'].astype('float64').values), 'target': mnist_dataset['target'].astype('int')})
 
     # filter by class, shuffle, divide to train/validation/test
     df = df.loc[df['target'].isin(selected_classes)]
@@ -126,12 +104,11 @@ def gradient_descent(parameters, verbose):
     train_targets = df_train['target'].to_numpy()
     test_targets = df_test['target'].to_numpy()
 
-    # TODO - Most of what comes before this point is preprocessing and should be moved out of this function. The real GD starts here.
-
     # model
     # initialize weights
     weights = (2.0 * np.random.rand(hardcoded_config.WEIGHT_LENGTH) - 1.0) * np.sqrt(1 / hardcoded_config.WEIGHT_LENGTH)
     weights[-1] = 0
+
 
     # For plotting
     training_losses = []
@@ -195,36 +172,16 @@ def gradient_descent(parameters, verbose):
         test_accuracy = gd_utils.binary_accuracy(test_y_pred, test_targets, pred_thr, labels) * 100
         test_accuracies.append(test_accuracy)
 
-    print(f'Train Accuracy: {training_accuracies[-1]:.3f} %, validation Accuracy: {test_accuracies[-1]:.3f} %\n')
-    print(f'Train Loss: {training_losses[-1]:.3f}, Validation Loss: {test_losses[-1]:.3f}\n')
+    if verbose:
+        print(f'Train Accuracy: {training_accuracies[-1]:.3f} %, validation Accuracy: {test_accuracies[-1]:.3f} %\n')
+        print(f'Train Loss: {training_losses[-1]:.3f}, Validation Loss: {test_losses[-1]:.3f}\n')
 
     gd_results.training_losses = training_losses
     gd_results.testing_losses = test_losses
     gd_results.training_accuracies = training_accuracies
     gd_results.testing_accuracies = test_accuracies
 
-    # # Format title
-    # plot_title = "Loss vs. Iterations"
-    #
-    # # Format extra information
-    # plot_text = plot_utils.build_plot_text(learning_rate, selected_classes, number_of_epochs,
-    #                                        loss_function_name, regularization_coefficient,
-    #                                        hypersphere_radius, stochastic, training_losses[-1],
-    #                                        test_losses[-1], training_accuracies[-1],
-    #                                        test_accuracies[-1])
-    #
-    # plt.plot(range(number_of_epochs), training_losses)
-    # plt.plot(range(number_of_epochs), test_losses)
-    # plt.xlabel("Iterations")
-    # plt.ylabel("Loss")
-    # plt.legend(['Train Loss', 'Test Loss'])
-    # plt.title(plot_title)
-    # plt.text(0.02, 0.5, plot_text, transform=plt.gcf().transFigure)
-    # plt.subplots_adjust(left=0.3)
-    # plt.show()
-
     return gd_results
-
 
 
 def main():
@@ -290,8 +247,7 @@ def main():
         function for the Gradient Descent we still had to specify it for the Regularized Gradient Descent.
         That is, for any argument, once we pass more than once instance of it we have to pass an instance
         for every variant.
-
-    Example of invalid input:"""
+    """
     parser = main_utils.GDArgumentParser()
     args = parser.parse_arguments()
     run_configurations = parser.build_instances(args)

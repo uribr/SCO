@@ -2,12 +2,6 @@ from enum import Enum
 
 from gd_utils import *
 
-
-# To be honest... If I had a system where the number of variants might increase, which isn't really farfetched for
-# learning in my opinion, I would've used a dictionary instead of classes to represent each variant because it would
-# be a lot easier to add new ones.
-# I'd use enum of strings or something like that for easy to use keys and each run would be a dictionary.
-
 class GradientDescentVariant(Enum):
     GD = "GD"  # Gradient Descent
     RGD = "RGD"  # Regularized Gradient Descent
