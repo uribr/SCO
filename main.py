@@ -184,8 +184,8 @@ def gradient_descent(parameters, verbose):
             new_weights = gd_utils.update_weights_vanilla(weights, grads, learning_rate)
 
             if use_projection:
-                # new_weights = np.clip(new_weights, -hypersphere_radius, hypersphere_radius)
-                new_weights = new_weights * hypersphere_radius / np.linalg.norm(new_weights)
+                if np.linalg.norm(new_weights) > hypersphere_radius:
+                    new_weights = new_weights * hypersphere_radius / np.linalg.norm(new_weights)
             if use_clipping:
                 new_weights = np.clip(new_weights, -cutoff, cutoff)
 
