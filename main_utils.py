@@ -194,7 +194,7 @@ class GDArgumentParser:
 
     def build_instances(self, args):
         self._pad_args_to_length(args)
-        configs = gd.RunConfiguration(args.verbose, args.compare)
+        configs = gd.RunConfiguration(args.seed, args.verbose, args.compare)
 
         for i in range(self.number_of_variants):
             variant = args.variants[i]

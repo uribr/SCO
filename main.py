@@ -30,6 +30,8 @@ def run(configs):
     if configs.verbose:
         print('Preprocessing...')
 
+    np.random.seed(configs.seed)
+
     for config in configs:
         config.results = gradient_descent(config, configs.verbose)
         plot_utils.plot_data_from_config(config, 'Epoch', 'Loss', 'Loss vs. Epoch', configs.verbose)
@@ -104,7 +106,6 @@ def gradient_descent(parameters, verbose):
     df = df.loc[df['target'].isin(selected_classes)]
     df['target'] = df['target'].replace(to_replace=selected_classes[0], value=labels[0])
     df['target'] = df['target'].replace(to_replace=selected_classes[1], value=labels[1])
-    np.random.seed(parameters.seed)
 
     df = df.sample(frac=1).reset_index(drop=True)
 

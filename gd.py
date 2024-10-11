@@ -17,7 +17,8 @@ class GradientDescentVariant(Enum):
 
 
 class RunConfiguration(list):
-    def __init__(self, verbose, compare, seq=()):
+    def __init__(self, seed, verbose, compare, seq=()):
+        self.seed = seed
         self.verbose = verbose
         self.compare = compare
         super(RunConfiguration, self).__init__(seq)
@@ -29,6 +30,7 @@ class GradientDescent:
         self.epochs = epochs
         self.learning_rate = learning_rate
         self.loss_function = loss_function
+        self.results = None
 
 
 class RegularizedGradientDescent(GradientDescent):
