@@ -1,29 +1,24 @@
-import matplotlib as plt
+import matplotlib.pyplot as plt
 
 import gd
 
 
-def plot_data_from_config(config, x_label, y_label, title, verbose=False):
+def plot_data_from_config(config, verbose=False):
     additional_info = build_plot_text(config)
     plot_data([config.epochs, config.epochs],
-               [config.results.training_losses, config.results.testing_losses],
-              x_label, y_label, title, legend=['train', 'test'], additional_info=additional_info)
+              [config.results.training_losses, config.results.testing_losses],
+              'Loss', 'Epoch', 'Loss vs. Epoch',
+              legend=['train', 'test'], additional_info=additional_info)
     if verbose:
         plot_data([config.epochs, config.epochs],
-                   [config.results.training_accuracy, config.results.testing_accuracy],
-                  x_label, y_label, title, legend=['train', 'test'], additional_info=additional_info)
+                  [config.results.training_accuracies, config.results.testing_accuracies],
+                  'Accuracy', 'Epoch', 'Accuracy vs. Epoch',
+                  legend=['train', 'test'], additional_info=additional_info)
 
 
 def plot_data_from_configs(configs: gd.RunConfiguration, x_label, y_label, title):
     for config in configs:
-        plot_data_from_config(config, x_label, y_label, title, configs.verbose)
-        # additional_info = build_plot_text(config)
-        # plot_data_from_config(config, x_label, y_label, title, verbose=configs.verbose)
-
-        # if configs.verbose:
-        #     plot_data([(config.epochs, config.results.testing_) for config in configs],
-        #               [f'{gd.GD_VARIANT_MAPPING[type(config)]}' for config in configs],
-        #               x_label, y_label, title, additional_info=additional_info)
+        plot_data_from_config(config, configs.verbose)
 
 
 def plot_data(epochs, values, x_label, y_label, title, legend=None, additional_info=None):
@@ -88,18 +83,6 @@ def _build_plot_text(learning_rate: object, selected_classes: object, number_of_
 
 
 def build_plot_text(parameters):
-    # coefficient = None
-    # if hasattr(parameters, 'regularization_coefficient'):
-    #     coefficient = parameters.regularization_coefficient
-    #
-    # radius = None
-    # if hasattr(parameters, 'hypersphere_radius'):
-    #     radius = parameters.hypersphere_radius
-    #
-    # cutoff = None
-    # if hasattr(parameters, 'cutoff'):
-    #     cutoff = parameters.cutoff
-
     return _build_plot_text(learning_rate=parameters.learning_rate,
                             selected_classes=parameters.digits,
                             number_of_epochs=parameters.epochs,

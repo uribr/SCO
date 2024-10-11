@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from sklearn.datasets import fetch_openml
 
 import gd
@@ -34,7 +33,7 @@ def run(configs):
 
     for config in configs:
         config.results = gradient_descent(config, configs.verbose)
-        plot_utils.plot_data_from_config(config, 'Epoch', 'Loss', 'Loss vs. Epoch', configs.verbose)
+        plot_utils.plot_data_from_config(config, configs.verbose)
 
     # TODO - Add text to the comparison plots to indicate learning rates, digits and special parameters of each curve.
     if configs.compare:
@@ -76,9 +75,6 @@ def gradient_descent(parameters, verbose):
         cutoff = parameters.cutoff
 
     gd_results = GDResults()
-
-    if verbose:
-        print(f'Starting... {type(parameters)} with parameters: {parameters}')
 
     # TODO - Move the loading and preprocessing outside of this function and do it once for all the runs unless there is
     #        some specialized preprocessing we would like to try on a specific variant.
@@ -151,7 +147,6 @@ def gradient_descent(parameters, verbose):
     for epoch in range(number_of_epochs):
         if stochastic:
             for i in range(len(train_data)):
-
                 sample_loss, grad = loss_function(
                     np.expand_dims(train_targets[i], 0), np.expand_dims(train_data[i], 0), weights)
                 epoch_loss += sample_loss
