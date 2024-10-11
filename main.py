@@ -149,7 +149,7 @@ def gradient_descent(parameters, verbose):
 
     # model
     # initialize weights
-    weights = np.random.randn(hardcoded_config.WEIGHT_LENGTH) * np.sqrt(1 / hardcoded_config.WEIGHT_LENGTH)
+    weights = (2.0 * np.random.rand(hardcoded_config.WEIGHT_LENGTH) - 1.0) * np.sqrt(1 / hardcoded_config.WEIGHT_LENGTH)
     weights[-1] = 0
 
     # For plotting
