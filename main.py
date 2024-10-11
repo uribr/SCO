@@ -1,7 +1,3 @@
-import time
-import argparse
-from argparse import ArgumentError
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -24,7 +20,6 @@ class GDResults:
         pass
 
 
-
 def run(configs):
     if configs.verbose:
         print('Starting...')
@@ -37,35 +32,26 @@ def run(configs):
 
     for config in configs:
         config.results = gradient_descent(config, configs.verbose)
-        # TODO - Move the plotting to here or call the plotting function.
-
+        plot_utils.plot_data_from_config(config, 'Epoch', 'Loss', 'Loss vs. Epoch', configs.verbose)
 
     # TODO - Add text to the comparison plots to indicate learning rates, digits and special parameters of each curve.
     if configs.compare:
-        for config in configs:
-            plt.plot(range(config.epochs), config.results.testing_losses)
-        plt.xlabel("Iterations")
-        plt.ylabel("Loss")
-        plt.legend([f'{gd.GD_VARIANT_MAPPING[type(config)]}' for config in configs])
-        plt.title("Test Comparison")
-        plt.text(0.02, 0.5, "", transform=plt.gcf().transFigure)
-        plt.subplots_adjust(left=0.3)
-        plt.show()
+        plot_utils.plot_comparison(configs)
+        plot_utils.plot_data([(config.epochs, config.results.testing_losses) for config in configs],
+                             [f'{gd.GD_VARIANT_MAPPING[type(config)]}' for config in configs],
+                             'Iteration', 'Loss','Test Loss Comparison', '')
+        plot_utils.plot_data([(config.epochs, config.results.testing_accuracies) for config in configs],
+                             [f'{gd.GD_VARIANT_MAPPING[type(config)]}' for config in configs],
+                             'Iteration', 'Accuracy','Test Accuracy Comparison', '')
 
         if configs.verbose:
             # Verbosity adds a comparison of the training graphs.
-            for config in configs:
-                plt.plot(config.epochs, config.results.training_losses)
-            plt.xlabel("Iterations")
-            plt.ylabel("Loss")
-            plt.legend([f'{gd.GD_VARIANT_MAPPING[type(config)]}' for config in configs])
-            plt.title("Training Comparison")
-            plt.text(0.02, 0.5, "", transform=plt.gcf().transFigure)
-            plt.subplots_adjust(left=0.3)
-            plt.show()
-    # TODO - Save the plots to files with a formatted name such as "[DATE]_[TIME]_[TYPE]" where TYPE can be one of:
-    #  1. GD variant
-    #  2. Training\Test Comparison
+            plot_utils.plot_data([(config.epochs, config.results.training_losses) for config in configs],
+                                 [f'{gd.GD_VARIANT_MAPPING[type(config)]}' for config in configs],
+                                 'Iteration', 'Loss', 'Test Loss Comparison', '')
+            plot_utils.plot_data([(config.epochs, config.results.training_accuracies) for config in configs],
+                                 [f'{gd.GD_VARIANT_MAPPING[type(config)]}' for config in configs],
+                                 'Iteration', 'Accuracy', 'Test Accuracy Comparison', '')
 
     if configs.verbose:
         print('Terminating...')
@@ -89,7 +75,6 @@ def gradient_descent(parameters, verbose):
 
     gd_results = GDResults()
 
-    # TODO - Move the code of main to an auxiliary function and instead iterate over the configurations and run them
     if verbose:
         print(f'Starting... {type(parameters)} with parameters: {parameters}')
 
@@ -119,8 +104,7 @@ def gradient_descent(parameters, verbose):
     df = df.loc[df['target'].isin(selected_classes)]
     df['target'] = df['target'].replace(to_replace=selected_classes[0], value=labels[0])
     df['target'] = df['target'].replace(to_replace=selected_classes[1], value=labels[1])
-    np.random.seed(1337)
-
+    np.random.seed(parameters.seed)
 
     df = df.sample(frac=1).reset_index(drop=True)
 
@@ -215,17 +199,6 @@ def gradient_descent(parameters, verbose):
         test_accuracy = gd_utils.binary_accuracy(test_y_pred, test_targets, pred_thr, labels) * 100
         test_accuracies.append(test_accuracy)
 
-    # train_y_pred = np.dot(train_data, weights.transpose())
-    # test_y_pred = np.dot(test_data, weights.transpose())
-
-    # if loss_function_name == BCE_LOSS_STRING:
-    #     train_y_pred = sigmoid(train_y_pred)
-    #     test_y_pred = sigmoid(test_y_pred)
-    #
-    # train_accuracy = binary_accuracy(train_y_pred, train_targets, pred_thr, labels) * 100
-    # test_accuracy = binary_accuracy(test_y_pred, test_targets, pred_thr, labels) * 100
-
-
     print(f'Train Accuracy: {training_accuracies[-1]:.3f} %, validation Accuracy: {test_accuracies[-1]:.3f} %\n')
     print(f'Train Loss: {training_losses[-1]:.3f}, Validation Loss: {test_losses[-1]:.3f}\n')
 
@@ -234,31 +207,25 @@ def gradient_descent(parameters, verbose):
     gd_results.training_accuracies = training_accuracies
     gd_results.testing_accuracies = test_accuracies
 
-    # TODO - This is where GD truly ends. Everything after this point should move out.
-
-    # TODO - Move all the plotting outside of this function.
-    # Format title
-    plot_title = "Loss vs. Iterations"
-
-    # Format extra information
-    plot_text = plot_utils.build_plot_text(learning_rate, selected_classes, number_of_epochs,
-                                           loss_function_name, regularization_coefficient,
-                                           hypersphere_radius, stochastic, training_losses[-1],
-                                           test_losses[-1], training_accuracies[-1],
-                                           test_accuracies[-1])
-
-    # TODO - Add the test set to the plots or redistribute the data into just train and test (replacing validation with test)
-    plt.plot(range(number_of_epochs), training_losses)
-    plt.plot(range(number_of_epochs), test_losses)
-    plt.xlabel("Iterations")
-    plt.ylabel("Loss")
-    plt.legend(['Train Loss', 'Test Loss'])
-    plt.title(plot_title)
-    plt.text(0.02, 0.5, plot_text, transform=plt.gcf().transFigure)
-    plt.subplots_adjust(left=0.3)
-    plt.show()
-
-    # TODO - Add a plot of accuracy.
+    # # Format title
+    # plot_title = "Loss vs. Iterations"
+    #
+    # # Format extra information
+    # plot_text = plot_utils.build_plot_text(learning_rate, selected_classes, number_of_epochs,
+    #                                        loss_function_name, regularization_coefficient,
+    #                                        hypersphere_radius, stochastic, training_losses[-1],
+    #                                        test_losses[-1], training_accuracies[-1],
+    #                                        test_accuracies[-1])
+    #
+    # plt.plot(range(number_of_epochs), training_losses)
+    # plt.plot(range(number_of_epochs), test_losses)
+    # plt.xlabel("Iterations")
+    # plt.ylabel("Loss")
+    # plt.legend(['Train Loss', 'Test Loss'])
+    # plt.title(plot_title)
+    # plt.text(0.02, 0.5, plot_text, transform=plt.gcf().transFigure)
+    # plt.subplots_adjust(left=0.3)
+    # plt.show()
 
     return gd_results
 

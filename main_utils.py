@@ -45,6 +45,9 @@ class GDArgumentParser:
                                                      'Arguments can be passed more than once so we can run multiple variants '
                                                      'with different parameters.')
 
+        parser.add_argument('-s', '--seed', dest='seed', type=int, default=1337,
+                            help='Seed for the random number generator.')
+
         parser.add_argument('-v', '--variant', dest='variants', type=str, action='append', required=True,
                             help='The names of the Gradient Descent variants to run.'
                                  '-v and\\or --variant can be specified multiple times. However, for each instance of variant'
