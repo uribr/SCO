@@ -3,22 +3,22 @@ import matplotlib.pyplot as plt
 import gd
 
 
-def plot_data_from_config(config, verbose=False):
+def plot_results_from_config(config, test):
     additional_info = build_plot_text(config)
     plot_data([config.epochs, config.epochs],
               [config.results.training_losses, config.results.testing_losses],
-              'Loss', 'Epoch', 'Loss vs. Epoch',
+              'Loss', 'Epoch', f'Loss vs. Epoch',
               legend=['train', 'test'], additional_info=additional_info)
 
     plot_data([config.epochs, config.epochs],
               [config.results.training_accuracies, config.results.testing_accuracies],
-              'Accuracy', 'Epoch', 'Accuracy vs. Epoch',
+              'Accuracy', 'Epoch', f'Accuracy vs. Epoch',
               legend=['train', 'test'], additional_info=additional_info)
 
 
-def plot_data_from_configs(configs: gd.RunConfiguration, x_label, y_label, title):
+def plot_results_from_configs(configs: gd.RunConfiguration, x_label, y_label, title):
     for config in configs:
-        plot_data_from_config(config, configs.verbose)
+        plot_results_from_config(config, configs.verbose)
 
 
 def plot_data(epochs, values, x_label, y_label, title, legend=None, additional_info=None):
@@ -243,8 +243,8 @@ def build_plot_text(parameters):
                             number_of_epochs=parameters.epochs,
                             loss_function_name=parameters.loss_function,
                             regularization_coefficient=parameters.regularization_coefficient if hasattr(parameters, 'regularization_coefficient') else None,
-                            hypersphere_radius=parameters.hypersphere_radius if hasattr(parameters, 'hypersphere_radius') else None,
-                            cutoff=parameters.cutoff if hasattr(parameters, 'cutoff') else None,
+                            hypersphere_radius=parameters.radius if hasattr(parameters, 'radius') else None,
+                            cutoff=parameters.cutoff_value if hasattr(parameters, 'cutoff_value') else None,
                             stochastic=type(parameters) is gd.StochasticGradientDescent,
                             train_loss=parameters.results.training_losses[-1],
                             test_loss=parameters.results.testing_losses[-1],

@@ -31,7 +31,7 @@ def run(configs):
 
     for config in configs:
         config.results = gradient_descent(config, mnist, configs.verbose)
-        plot_utils.plot_data_from_config(config, configs.verbose)
+        plot_utils.plot_results_from_config(config, configs.verbose)
 
     if configs.compare:
         plot_utils.plot_comparison(configs)
@@ -116,6 +116,8 @@ def gradient_descent(parameters, mnist_dataset, verbose):
     training_accuracies = []
     test_accuracies = []
 
+    if verbose:
+        print('Training...')
     # Training loop
     epoch_loss = 0
     use_projection = hypersphere_radius is not None
@@ -171,6 +173,9 @@ def gradient_descent(parameters, mnist_dataset, verbose):
 
         test_accuracy = gd_utils.binary_accuracy(test_y_pred, test_targets, pred_thr, labels) * 100
         test_accuracies.append(test_accuracy)
+
+    if verbose:
+        print('Done!')
 
     if verbose:
         print(f'Train Accuracy: {training_accuracies[-1]:.3f} %, validation Accuracy: {test_accuracies[-1]:.3f} %\n')
