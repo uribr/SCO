@@ -47,7 +47,7 @@ class GDArgumentParser:
                                                      'Arguments can be passed more than once so we can run multiple variants '
                                                      'with different parameters.')
 
-        parser.add_argument('-s', '--seed', dest='seeds',  action='append',
+        parser.add_argument('-s', '--seed', dest='seeds',  action='append', required=True,
                             help='Seed for the random number generator. Can be specified multiple times.')
 
         parser.add_argument('-v', '--variant', dest='variants', type=str, action='append', required=True,

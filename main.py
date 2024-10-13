@@ -29,7 +29,7 @@ def run(configs):
 
     for config in configs:
         config.results = gradient_descent(config, mnist, configs.verbose)
-        # plot_utils.plot_results_from_config(config, configs.verbose)
+        plot_utils.plot_results_from_config(config, configs.verbose)
 
     if configs.compare:
         plot_utils.plot_comparison(configs)
