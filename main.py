@@ -27,11 +27,9 @@ def run(configs):
         print('Fetching data...')
     mnist = fetch_openml('mnist_784')
 
-    np.random.seed(configs.seed)
-
     for config in configs:
         config.results = gradient_descent(config, mnist, configs.verbose)
-        plot_utils.plot_results_from_config(config, configs.verbose)
+        # plot_utils.plot_results_from_config(config, configs.verbose)
 
     if configs.compare:
         plot_utils.plot_comparison(configs)
@@ -58,6 +56,7 @@ def gradient_descent(parameters, mnist_dataset, verbose):
 
     gd_results = GDResults()
 
+
     # Choose a loss function
     loss_function = None
     if str.lower(loss_function_name) == hardcoded_config.HINGE_LOSS_STRING:
@@ -75,6 +74,8 @@ def gradient_descent(parameters, mnist_dataset, verbose):
         print('Preprocessing...')
     df = pd.DataFrame.from_dict(
         {'data': list(mnist_dataset['data'].astype('float64').values), 'target': mnist_dataset['target'].astype('int')})
+
+    np.random.seed(parameters.seed)
 
     # filter by class, shuffle, divide to train/validation/test
     df = df.loc[df['target'].isin(selected_classes)]
@@ -134,7 +135,6 @@ def gradient_descent(parameters, mnist_dataset, verbose):
             test_loss, _ = loss_function(test_targets, test_data, weights)
 
         else:
-
             epoch_loss, grads = loss_function(train_targets, train_data, weights)
 
             if use_regularization:
@@ -151,7 +151,7 @@ def gradient_descent(parameters, mnist_dataset, verbose):
             weights = new_weights
 
             if verbose:
-                if (use_regularization or use_projection) and epoch % hardcoded_config.REPORT_FREQUENCY == 0:
+                if epoch % hardcoded_config.REPORT_FREQUENCY == 0:
                     print(f'Weights Norm: {np.linalg.norm(weights)}')
 
         # Compute and store losses
@@ -222,13 +222,13 @@ def main():
 
     Examples of valid input:
 
-    "python main.py -v GD --epochs 50 --rate 0.3 --loss hinge --digits 0 9"
+    "python main.py -v GD --epochs 50 --rate 0.3 --loss hinge --digits 0 9 --seed 1337"
 
         This runs Gradient Descent with 50 epochs, a learning rate of 0.3 and with the hinge loss
         function learning to classify between 0 and 9.
 
-    "python main.py -v GD --epochs 50 --rate 0.3 --loss hinge
-                    -v GD --epochs 200 --rate 0.7 --digits 0 9
+    "python main.py -v GD --epochs 50 --rate 0.3 --loss hinge --seed 1337
+                    -v GD --epochs 200 --rate 0.7 --digits 0 9 --seed 42
                     --compare"
 
         This will run two instances of Gradient Descent one with 50 epochs and a learning rate of 0.3 and
@@ -237,7 +237,7 @@ def main():
         output a comparison graph between the two runs
 
     "python main.py -v GD --epochs 50 --rate 0.3 --loss hinge --digits 0 9
-                   -v RGD --coefficient 0.5"
+                   -v RGD --coefficient 0.5 --seed 1337"
 
         This will run both a Gradient Descent and a Regularized Gradient Descent with the same parameters.
         Since the regularization coefficient is only applicable to Regularized Gradient Descent it can be
@@ -245,7 +245,8 @@ def main():
 
     "python main.py -v SGD --epochs 50 --rate 0.3 --loss hinge --digits 8 0
                     -v PGD --epochs 100 --rate 0.1 --loss bce --radius 2 --digits 1 2
-                    -v RGD --epochs 200 --rate 0.05 --loss hinge --coefficient 7.5 -- digits 7 3"
+                    -v RGD --epochs 200 --rate 0.05 --loss hinge --coefficient 7.5 -- digits 7 3
+                    --seed 1337"
 
         This will run a Stochastic Gradient Descent, a Projected Gradient Descent and a Regularized Gradient
         Descent each with its own parameters. Notice that even though we already specified the hinge loss

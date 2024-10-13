@@ -54,7 +54,7 @@ def plot_comparison(configs):
     acc_legend = build_accuracy_legend_text(configs, shared_params)
     plot_data([config.epochs for config in configs],
               [config.results.testing_accuracies for config in configs],
-              'Iteration', 'Loss', 'Test Accuracy Comparison',
+              'Iteration', 'Accuracy', 'Test Accuracy Comparison',
               legend= acc_legend, additional_info=additional_acc_info)
 
     if configs.verbose:
@@ -65,7 +65,7 @@ def plot_comparison(configs):
                   legend=loss_legend, additional_info=additional_loss_info)
         plot_data([config.epochs for config in configs],
                   [config.results.training_accuracies for config in configs],
-                  'Iteration', 'Loss', 'Training Accuracy Comparison',
+                  'Iteration', 'Accuracy', 'Training Accuracy Comparison',
                   legend= acc_legend, additional_info=additional_acc_info)
 
 
@@ -80,6 +80,8 @@ def _build_common_legend_text(params, config, verbose):
         variant_text += f'|R: {config.learning_rate:.1f}'
     if params.loss is None:
         variant_text += f'|L: {config.loss_function}'
+    if params.seed is None:
+        variant_text += f'|S: {config.seed}'
 
     if params.cutoff is None and isinstance(config, gd.ConstrainedGradientDescent):
         variant_text += f'|P:{config.cutoff_value:.1f}'
@@ -119,7 +121,7 @@ def build_accuracy_legend_text(configs, params):
 def _build_plot_text(learning_rate, selected_classes, number_of_epochs,
                      loss_function_name, regularization_coefficient,
                      hypersphere_radius, cutoff, stochastic, train_loss,
-                     test_loss, train_accuracy, test_accuracy):
+                     test_loss, train_accuracy, test_accuracy, seed):
     plot_text = f'Digits: {selected_classes[0]}, {selected_classes[-1]}\n' \
                 f'Rate: {learning_rate}\n' \
                 f'Iterations: {number_of_epochs}\n' \
@@ -128,6 +130,7 @@ def _build_plot_text(learning_rate, selected_classes, number_of_epochs,
                 f'Test Loss: {test_loss:.3f}\n' \
                 f'Train Acc: {train_accuracy:.3f}\n' \
                 f'Test Acc: {test_accuracy:.3f}\n' \
+                f'Seed: {seed}\n'\
                 'Variant: '
     if regularization_coefficient is not None:
         plot_text += 'RGD\n'
@@ -146,7 +149,7 @@ def _build_plot_text(learning_rate, selected_classes, number_of_epochs,
     return plot_text
 
 class Parameters:
-    def __init__(self, digits=None, epochs=None, rate=None, loss=None, coefficient=None, radius=None, cutoff=None):
+    def __init__(self, digits=None, epochs=None, rate=None, loss=None, coefficient=None, radius=None, cutoff=None, seed=None):
         self.digits = digits
         self.epochs = epochs
         self.rate = rate
@@ -154,6 +157,7 @@ class Parameters:
         self.coefficient = coefficient
         self.radius = radius
         self.cutoff = cutoff
+        self.seed = seed
 
 def _sort(lst: list):
     lst.sort()
@@ -180,6 +184,8 @@ def _find_shared_parameters(configs):
     if None in cutoffs:
         cutoffs.remove(None)
 
+    seeds = {config.seed for config in configs}
+
     if len(digits) == 1:
         params.digits = digits.pop()
 
@@ -200,6 +206,9 @@ def _find_shared_parameters(configs):
 
     if len(radii) == 1:
         params.radius = radii.pop()
+
+    if len(seeds) == 1:
+        params.seed = seeds.pop()
 
     return params
 
@@ -249,4 +258,5 @@ def build_plot_text(parameters):
                             train_loss=parameters.results.training_losses[-1],
                             test_loss=parameters.results.testing_losses[-1],
                             train_accuracy=parameters.results.training_accuracies[-1],
-                            test_accuracy=parameters.results.testing_accuracies[-1])
+                            test_accuracy=parameters.results.testing_accuracies[-1],
+                            seed=parameters.seed)

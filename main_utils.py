@@ -13,6 +13,7 @@ class GDArgumentParser:
         self.number_of_radii = 0
         self.number_of_cutoffs = 0
         self.number_of_coefficients = 0
+        self.number_of_seeds = 0
 
         self.count_gd = 0
         self.rgd_count = 0
@@ -31,6 +32,7 @@ class GDArgumentParser:
         self.number_of_radii = 0
         self.number_of_cutoffs = 0
         self.number_of_coefficients = 0
+        self.number_of_seeds = 0
 
         self.count_gd = 0
         self.rgd_count = 0
@@ -45,8 +47,8 @@ class GDArgumentParser:
                                                      'Arguments can be passed more than once so we can run multiple variants '
                                                      'with different parameters.')
 
-        parser.add_argument('-s', '--seed', dest='seed', type=int, default=1337,
-                            help='Seed for the random number generator.')
+        parser.add_argument('-s', '--seed', dest='seeds',  action='append',
+                            help='Seed for the random number generator. Can be specified multiple times.')
 
         parser.add_argument('-v', '--variant', dest='variants', type=str, action='append', required=True,
                             help='The names of the Gradient Descent variants to run.'
@@ -58,7 +60,6 @@ class GDArgumentParser:
         parser.add_argument('-d', '--digits', type=int, nargs=2, action='append', required=True,
                             help='The classes for binary classification (e.g., "--digits 0 9" means [(0, 9)] '
                                  'and "--digits 0 9 1 2" means [(0,9), (1,2)]). Can be specified multiple times.')
-
 
         parser.add_argument('--loss', '--loss_function', dest='loss_functions', default=[], action='append',
                             type=str, required=True,
@@ -124,6 +125,8 @@ class GDArgumentParser:
         self.number_of_radii = len(args.radii)
         self.number_of_cutoffs = len(args.cutoffs)
         self.number_of_coefficients = len(args.coefficients)
+        self.number_of_seeds = len(args.seeds)
+
 
         # The number of instances of a parameter matches the number of instances to run if they
         # are equal (this includes the case where they are both 0) or if the number of times the parameter appears is 1.
@@ -135,6 +138,8 @@ class GDArgumentParser:
             raise RuntimeError('The number of variants does not match the number of epochs supplied.')
         if not self._verify_variant_count_matches_paramerter_count(self.number_of_variants, self.number_of_digits):
             raise RuntimeError('The number of variants does not match the number of digits supplied.')
+        if not self._verify_variant_count_matches_paramerter_count(self.number_of_variants, self.number_of_seeds):
+            raise RuntimeError('The number of variants does not match the number of seeds supplied.')
 
         # The number of instances of a variant's parameter matches the number of instances of that variant if they
         # are equal (this includes the case where they are both 0) or if the number of times the parameter appears
@@ -190,11 +195,13 @@ class GDArgumentParser:
         self._pad_parameter_list_to_length(args.coefficients, self.number_of_variants)
         self._pad_parameter_list_to_length(args.cutoffs, self.number_of_variants)
         self._pad_parameter_list_to_length(args.radii, self.number_of_variants)
+        self._pad_parameter_list_to_length(args.seeds, self.number_of_variants)
 
 
     def build_instances(self, args):
         self._pad_args_to_length(args)
-        configs = gd.RunConfiguration(args.seed, args.verbose, args.compare)
+
+        configs = gd.RunConfiguration(args.verbose, args.compare)
 
         for i in range(self.number_of_variants):
             variant = args.variants[i]
@@ -203,30 +210,35 @@ class GDArgumentParser:
                     configs.append(gd.GradientDescent(args.digits[i],
                                                       float(args.learning_rates[i]),
                                                       int(args.epochs[i]),
-                                                      args.loss_functions[i]))
+                                                      args.loss_functions[i],
+                                                      int(args.seeds[i])))
                 case gd.GradientDescentVariant.RGD.name:
                     configs.append(gd.RegularizedGradientDescent(args.digits[i],
                                                                  float(args.learning_rates[i]),
                                                                  int(args.epochs[i]),
                                                                  args.loss_functions[i],
-                                                                 float(args.coefficients[i])))
+                                                                 float(args.coefficients[i]),
+                                                                 int(args.seeds[i])))
                 case gd.GradientDescentVariant.PGD.name:
                     configs.append(gd.ProjectedGradientDescent(args.digits[i],
                                                                float(args.learning_rates[i]),
                                                                int(args.epochs[i]),
                                                                args.loss_functions[i],
-                                                               float(args.radii[i])))
+                                                               float(args.radii[i]),
+                                                               int(args.seeds[i])))
                 case gd.GradientDescentVariant.CGD.name:
                     configs.append(gd.ConstrainedGradientDescent(args.digits[i],
                                                                  float(args.learning_rates[i]),
                                                                  int(args.epochs[i]),
                                                                  args.loss_functions[i],
-                                                                 float(args.cutoffs[i])))
+                                                                 float(args.cutoffs[i]),
+                                                                 int(args.seeds[i])))
                 case gd.GradientDescentVariant.SGD.name:
                     configs.append(gd.StochasticGradientDescent(args.digits[i],
                                                                 float(args.learning_rates[i]),
                                                                 int(args.epochs[i]),
-                                                                args.loss_functions[i]))
+                                                                args.loss_functions[i],
+                                                                int(args.seeds[i])))
                 case _:
                     raise RuntimeError(f'Unknown variant "{variant}"')
 
