@@ -7,12 +7,12 @@ def plot_results_from_config(config, test):
     additional_info = build_plot_text(config)
     plot_data([config.epochs, config.epochs],
               [config.results.training_losses, config.results.testing_losses],
-              'Loss', 'Epoch', f'Loss vs. Epoch',
+              'Epoch','Loss',f'Loss vs. Epoch',
               legend=['train', 'test'], additional_info=additional_info)
 
     plot_data([config.epochs, config.epochs],
               [config.results.training_accuracies, config.results.testing_accuracies],
-              'Accuracy', 'Epoch', f'Accuracy vs. Epoch',
+              'Epoch','Accuracy', f'Accuracy vs. Epoch',
               legend=['train', 'test'], additional_info=additional_info)
 
 
