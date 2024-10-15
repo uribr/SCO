@@ -47,25 +47,25 @@ def plot_comparison(configs):
     loss_legend = build_loss_legend_text(configs, shared_params)
     plot_data([config.epochs for config in configs],
               [config.results.testing_losses for config in configs],
-              'Iteration', 'Loss', 'Test Loss Comparison',
+              'Epoch', 'Loss', 'Test Loss Comparison',
               legend= loss_legend, additional_info=additional_loss_info)
 
     additional_acc_info = build_comparison_plot_text(configs, shared_params)
     acc_legend = build_accuracy_legend_text(configs, shared_params)
     plot_data([config.epochs for config in configs],
               [config.results.testing_accuracies for config in configs],
-              'Iteration', 'Accuracy', 'Test Accuracy Comparison',
+              'Epoch', 'Accuracy', 'Test Accuracy Comparison',
               legend= acc_legend, additional_info=additional_acc_info)
 
     if configs.verbose:
         # Verbosity adds a comparison of the training graphs.
         plot_data([config.epochs for config in configs],
                   [config.results.training_losses for config in configs],
-                  'Iteration', 'Loss', 'Training Loss Comparison',
+                  'Epoch', 'Loss', 'Training Loss Comparison',
                   legend=loss_legend, additional_info=additional_loss_info)
         plot_data([config.epochs for config in configs],
                   [config.results.training_accuracies for config in configs],
-                  'Iteration', 'Accuracy', 'Training Accuracy Comparison',
+                  'Epoch', 'Accuracy', 'Training Accuracy Comparison',
                   legend= acc_legend, additional_info=additional_acc_info)
 
 
